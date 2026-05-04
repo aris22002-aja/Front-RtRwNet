@@ -5,6 +5,7 @@ const API_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL).r
 
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
 });
 
 type ApiRow = Record<string, unknown>;
@@ -154,6 +155,14 @@ const buildResume = (snapshot: DataSnapshot): ResumeSummary => {
 };
 
 export const getActivities = () => api.get('/activities').then(res => res.data);
+
+export const activitiesApi = {
+  getAll: () => api.get('/activities').then((res) => res.data),
+  create: (data: unknown) => api.post('/activities', data).then((res) => res.data),
+  update: (id: number | string, data: unknown) => api.put(`/activities/${id}`, data).then((res) => res.data),
+  delete: (id: number | string) => api.delete(`/activities/${id}`).then((res) => res.data),
+};
+
 export const getOrganizations = () => api.get('/organizations').then(res => res.data);
 export const getProducts = () => api.get('/products').then(res => res.data);
 export const getPosts = () => api.get('/posts').then(res => res.data);
