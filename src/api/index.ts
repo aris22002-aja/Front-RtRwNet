@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const DEFAULT_STAGING_API_URL = 'https://backend-worker-staging.aris-22002-priyanto.workers.dev/api';
+const DEFAULT_STAGING_API_URL = '/api';
 const API_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL).replace(/\/+$/, '');
 
 const api = axios.create({
