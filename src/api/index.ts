@@ -109,19 +109,43 @@ const toString = (value: unknown, fallback = ''): string =>
 const toRows = (value: unknown): ApiRow[] =>
   Array.isArray(value) ? value.filter((item): item is ApiRow => !!item && typeof item === 'object') : [];
 
+// ✅ Fungsi getDataSnapshot yang baru – tidak lagi bergantung pada endpoint /data
 const getDataSnapshot = async (): Promise<DataSnapshot> => {
-  const data = await api.get('/data').then((res) => res.data as Record<string, unknown>);
+  const [
+    activities,
+    organizations,
+    products,
+    posts,
+    agendas,
+    kegiatan,
+    komunitas,
+    houses,
+    residents,
+    payments,
+  ] = await Promise.all([
+    api.get('/activities').then(res => res.data).catch(() => []),
+    api.get('/organizations').then(res => res.data).catch(() => []),
+    api.get('/products').then(res => res.data).catch(() => []),
+    api.get('/posts').then(res => res.data).catch(() => []),
+    api.get('/agendas').then(res => res.data).catch(() => []),
+    api.get('/kegiatan').then(res => res.data).catch(() => []),
+    api.get('/komunitas').then(res => res.data).catch(() => []),
+    api.get('/houses').then(res => res.data).catch(() => []),
+    api.get('/residents').then(res => res.data).catch(() => []),
+    api.get('/payments').then(res => res.data).catch(() => []),
+  ]);
+
   return {
-    activities: toRows(data.activities),
-    organizations: toRows(data.organizations),
-    products: toRows(data.products),
-    posts: toRows(data.posts),
-    agendas: toRows(data.agendas),
-    kegiatan: toRows(data.kegiatan),
-    komunitas: toRows(data.komunitas),
-    houses: toRows(data.houses),
-    residents: toRows(data.residents),
-    payments: toRows(data.payments),
+    activities: toRows(activities),
+    organizations: toRows(organizations),
+    products: toRows(products),
+    posts: toRows(posts),
+    agendas: toRows(agendas),
+    kegiatan: toRows(kegiatan),
+    komunitas: toRows(komunitas),
+    houses: toRows(houses),
+    residents: toRows(residents),
+    payments: toRows(payments),
   };
 };
 
@@ -291,7 +315,7 @@ export const getEvents = () => api.get('/kegiatan').then(res => res.data);
 export const kegiatanApi = {
   getAll: () => api.get('/kegiatan').then(res => res.data),
   create: (data: any) => api.post('/kegiatan', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/kegiatan/${id}`, data).then(res => res.data),   // ✅ tambahan
+  update: (id: number, data: any) => api.put(`/kegiatan/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/kegiatan/${id}`).then(res => res.data),
 };
 
@@ -299,7 +323,7 @@ export const getCommunities = () => api.get('/komunitas').then(res => res.data);
 export const komunitasApi = {
   getAll: () => api.get('/komunitas').then(res => res.data),
   create: (data: any) => api.post('/komunitas', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/komunitas/${id}`, data).then(res => res.data),   // ✅ tambahan
+  update: (id: number, data: any) => api.put(`/komunitas/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/komunitas/${id}`).then(res => res.data),
 };
 
