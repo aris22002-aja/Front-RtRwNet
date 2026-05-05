@@ -6,7 +6,52 @@ const API_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL).r
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
+
+// Request interceptor - log semua request untuk debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    return config;
+  },
+  (error) => {
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor - tangani error dengan lebih baik
+api.interceptors.response.use(
+  (response) => {
+    console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      // Server merespons dengan status error (4xx, 5xx)
+      console.error('[API Error Response]', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url,
+      });
+      
+      const message = error.response.data?.message || error.response.data?.error || 'Terjadi kesalahan pada server';
+      alert(`Error ${error.response.status}: ${message}`);
+    } else if (error.request) {
+      // Request dibuat tapi tidak ada response
+      console.error('[API No Response]', error.request);
+      alert('Tidak dapat terhubung ke server. Pastikan backend berjalan dan CORS dikonfigurasi dengan benar.');
+    } else {
+      // Error saat setup request
+      console.error('[API Setup Error]', error.message);
+      alert(`Error: ${error.message}`);
+    }
+    return Promise.reject(error);
+  }
+);
 
 type ApiRow = Record<string, unknown>;
 
@@ -164,8 +209,28 @@ export const activitiesApi = {
 };
 
 export const getOrganizations = () => api.get('/organizations').then(res => res.data);
+export const organizationsApi = {
+  getAll: () => api.get('/organizations').then(res => res.data),
+  create: (data: any) => api.post('/organizations', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/organizations/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/organizations/${id}`).then(res => res.data),
+};
+
 export const getProducts = () => api.get('/products').then(res => res.data);
+export const productsApi = {
+  getAll: () => api.get('/products').then(res => res.data),
+  create: (data: any) => api.post('/products', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/products/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/products/${id}`).then(res => res.data),
+};
+
 export const getPosts = () => api.get('/posts').then(res => res.data);
+export const postsApi = {
+  getAll: () => api.get('/posts').then(res => res.data),
+  create: (data: any) => api.post('/posts', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/posts/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/posts/${id}`).then(res => res.data),
+};
 export const getResume = () => getDataSnapshot().then(buildResume);
 export const getStats = () => getDataSnapshot().then(buildStats);
 
@@ -246,5 +311,12 @@ export const getAgendas = (params: { month: number; year: number }) =>
       return date.getMonth() + 1 === params.month && date.getFullYear() === params.year;
     }),
   );
+
+export const agendasApi = {
+  getAll: (params: { month: number; year: number }) => getAgendas(params),
+  create: (data: any) => api.post('/agendas', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/agendas/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/agendas/${id}`).then(res => res.data),
+};
 
 export default api;
