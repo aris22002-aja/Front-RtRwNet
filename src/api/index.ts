@@ -291,6 +291,7 @@ export const getEvents = () => api.get('/kegiatan').then(res => res.data);
 export const kegiatanApi = {
   getAll: () => api.get('/kegiatan').then(res => res.data),
   create: (data: any) => api.post('/kegiatan', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/kegiatan/${id}`, data).then(res => res.data),   // ✅ tambahan
   delete: (id: number) => api.delete(`/kegiatan/${id}`).then(res => res.data),
 };
 
@@ -298,6 +299,7 @@ export const getCommunities = () => api.get('/komunitas').then(res => res.data);
 export const komunitasApi = {
   getAll: () => api.get('/komunitas').then(res => res.data),
   create: (data: any) => api.post('/komunitas', data).then(res => res.data),
+  update: (id: number, data: any) => api.put(`/komunitas/${id}`, data).then(res => res.data),   // ✅ tambahan
   delete: (id: number) => api.delete(`/komunitas/${id}`).then(res => res.data),
 };
 
