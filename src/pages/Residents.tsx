@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { residentsApi, housesApi } from '../api';
+import { residentsApi } from '../api';
 import { UserPlus, Trash2, Phone } from 'lucide-react';
 
 // Tipe data penduduk
