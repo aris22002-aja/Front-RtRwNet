@@ -169,6 +169,22 @@ interface Komunitas {
   description?: string;
 }
 
+// Activity payload type for type-safe create/update operations
+interface ActivityPayload {
+  type: string;
+  time: string;
+  message: string;
+  user?: string;
+}
+
+// Activity payload type for type-safe create/update operations
+interface ActivityPayload {
+  type: string;
+  time: string;
+  message: string;
+  user?: string;
+}
+
 const toNumber = (value: unknown, fallback = 0): number => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value);
@@ -299,8 +315,8 @@ export const getActivities = () => api.get('/activities').then(res => res.data);
 
 export const activitiesApi = {
   getAll: () => api.get('/activities').then((res) => res.data),
-  create: (data: unknown) => api.post('/activities', data).then((res) => res.data),
-  update: (id: number | string, data: unknown) => api.put(`/activities/${id}`, data).then((res) => res.data),
+  create: (data: ActivityPayload) => api.post('/activities', data).then((res) => res.data),
+  update: (id: number | string, data: ActivityPayload) => api.put(`/activities/${id}`, data).then((res) => res.data),
   delete: (id: number | string) => api.delete(`/activities/${id}`).then((res) => res.data),
 };
 

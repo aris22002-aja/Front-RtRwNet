@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { activitiesApi } from '../api';
-import { Activity, Clock, User, Plus, Trash2, Pencil } from 'lucide-react';
+import { Activity, Clock, User, Plus, Trash2, Pencil, X } from 'lucide-react';
 
 type ActivityType = 'postingan' | 'pembayaran' | 'kegiatan' | 'komunitas' | 'sistem' | string;
 
@@ -11,6 +11,11 @@ interface ActivityItem {
   message: string;
   user?: string;
 }
+
+// Development-only error logger to prevent data leaks in production
+const errorDev = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.error(...args);
+};
 
 const Aktivitas = () => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -121,21 +126,22 @@ const Aktivitas = () => {
       closeForm();
       await fetchActivities();
     } catch (err) {
-      console.error(err);
+      errorDev('[Aktivitas] Submit error:', err);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (activity: ActivityItem) => {
-    if (activity.id === undefined || activity.id === null) return;
-    if (!confirm(`Yakin ingin menghapus aktivitas "${activity.message}"?`)) return;
+  const handleDelete = async () => {
+    if (!deleteTarget || deleteTarget.id === undefined || deleteTarget.id === null) return;
+    const activityId = deleteTarget.id;
 
     try {
-      await activitiesApi.delete(activity.id);
+      await activitiesApi.delete(activityId);
+      setDeleteTarget(null);
       await fetchActivities();
     } catch (err) {
-      console.error(err);
+      errorDev('[Aktivitas] Delete error:', err);
     }
   };
 
