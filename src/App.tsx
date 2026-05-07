@@ -19,15 +19,16 @@ import {
   Bike,
   Package,
   Clock,
-  SignOut,
-  HouseLine,
+  LogOut,
 } from 'lucide-react';
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Aktivitas = lazy(() => import('./pages/Aktivitas'));
 const Houses = lazy(() => import('./pages/Houses'));
-const Residents = lazy(() => import('./pages/Residents'));
+const Residents = lazy(() =>
+  import('./pages/Residents').then((module) => ({ default: module.default }))
+);
 const Payments = lazy(() => import('./pages/Payments'));
 const Komunitas = lazy(() => import('./pages/Komunitas'));
 const Kegiatan = lazy(() => import('./pages/Kegiatan'));
@@ -109,7 +110,7 @@ const LogoutButton: React.FC = () => {
       }}
       title="Keluar"
     >
-      <SignOut size={18} />
+      <LogOut size={18} />
       Keluar
     </button>
   );
@@ -149,7 +150,7 @@ const AppLayout: React.FC = () => {
     <div className="app-container">
       <aside className="sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-          <HouseLine size={28} weight="duotone" color="var(--primary)" />
+          <Home size={28} weight="duotone" color="var(--primary)" />
           <h2 style={{ margin: 0 }}>RtRwNet</h2>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1.5rem 0' }}>
@@ -225,6 +226,12 @@ const AppLayout: React.FC = () => {
               <Route path="/aktivitas" element={<Aktivitas />} />
               <Route path="/kegiatan" element={<Kegiatan />} />
               <Route path="/komunitas" element={<Komunitas />} />
+              <Route path="/warga/organisasi" element={<Komunitas />} />
+              <Route path="/warga/kegiatan" element={<Kegiatan />} />
+              <Route path="/warga/aktivitas" element={<Aktivitas />} />
+              <Route path="/warga/iuran" element={<Payments />} />
+              <Route path="/warga/penghuni" element={<Residents />} />
+              <Route path="/warga/rumah" element={<Houses />} />
               {/* Default */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
