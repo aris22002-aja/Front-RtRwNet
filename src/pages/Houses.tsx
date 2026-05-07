@@ -5,7 +5,8 @@ import { Plus, Trash2, Edit2 } from 'lucide-react';
 const Houses = () => {
   const [houses, setHouses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ block: '', number: '', address: '', ipl_amount: 100000 });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null);
+  const [formData, setFormData] = useState({ block: '', number: '', address: '', ipl_amount: 100000, status: 'vacant' });
 
   const fetchHouses = () => housesApi.getAll().then(setHouses);
 
@@ -18,13 +19,18 @@ const Houses = () => {
     housesApi.create(formData).then(() => {
       setShowForm(false);
       fetchHouses();
-      setFormData({ block: '', number: '', address: '', ipl_amount: 100000 });
+      setFormData({ block: '', number: '', address: '', ipl_amount: 100000, status: 'vacant' });
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Yakin ingin menghapus rumah ini?')) {
-      housesApi.delete(id).then(fetchHouses);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await housesApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      fetchHouses();
+    } catch (error) {
+      // silent error - UI stays clean
     }
   };
 
@@ -112,7 +118,7 @@ const Houses = () => {
       </td>
       <td>Rp {house.ipl_amount.toLocaleString()}</td>
       <td>
-        <button className="btn btn-sm" onClick={() => handleDelete(house.id)} style={{ color: 'var(--danger)' }}>
+        <button className="btn btn-sm" onClick={() => setDeleteTarget({ id: house.id, label: `${house.block}/${house.number}` })} style={{ color: 'var(--danger)' }}>
           <Trash2 size={16} />
         </button>
       </td>

@@ -9,6 +9,13 @@ const Kegiatan = () => {
 
   // State untuk form tambah
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+
+  // Development-only error logger
+  const errorDev = (...args: unknown[]) => {
+    if (import.meta.env.DEV) console.error(...args);
+  };
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -49,18 +56,18 @@ const Kegiatan = () => {
       setShowForm(false);
       fetchEvents();
     } catch (error) {
-      console.error(error);
+      errorDev('[Kegiatan] handleTambah error:', error);
     }
   };
 
-  const handleHapus = async (id: number, title: string) => {
-    if (confirm(`Yakin ingin menghapus "${title}"?`)) {
-      try {
-        await kegiatanApi.delete(id);
-        fetchEvents();
-      } catch (error) {
-        console.error(error);
-      }
+  const handleHapusConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await kegiatanApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      fetchEvents();
+    } catch (error) {
+      errorDev('[Kegiatan] handleHapusConfirm error:', error);
     }
   };
 
@@ -183,7 +190,7 @@ const Kegiatan = () => {
             <div key={event.id} className="card" style={{ cursor: 'pointer', position: 'relative' }}>
               {/* Tombol hapus */}
               <button
-                onClick={() => handleHapus(event.id, event.title)}
+                onClick={() => setDeleteTarget({ id: event.id, title: event.title })}
                 style={{
                   position: 'absolute',
                   top: '8px',

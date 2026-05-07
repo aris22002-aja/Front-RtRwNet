@@ -337,7 +337,7 @@ const Aktivitas = () => {
 
                       <button
                         type="button"
-                        onClick={() => handleDelete(activity)}
+                        onClick={() => setDeleteTarget(activity)}
                         style={{
                           background: 'rgba(255,255,255,0.85)',
                           border: '1px solid var(--border)',

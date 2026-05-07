@@ -7,6 +7,13 @@ const Payments = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [confirmAction, setConfirmAction] = useState<{ type: 'generate' | 'pay'; id?: number } | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+
+  // Development-only error logger
+  const errorDev = (...args: unknown[]) => {
+    if (import.meta.env.DEV) console.error(...args);
+  };
 
   // Fungsi fetch yang mengembalikan data (untuk digunakan ulang)
   const fetchPayments = async (): Promise<any[]> => {
@@ -15,7 +22,7 @@ const Payments = () => {
       setPayments(data);
       return data;
     } catch (error) {
-      console.error(error);
+      errorDev('[Payments] fetchPayments error:', error);
       setPayments([]);                    // reset ke array kosong saat gagal
       return [];
     }
@@ -26,26 +33,31 @@ const Payments = () => {
   }, [month, year]);
 
   const handleGenerate = async () => {
-    if (confirm(`Generate tagihan IPL untuk periode ${month}/${year}?`)) {
-      try {
-        await paymentsApi.generate(month, year);
-        const data = await fetchPayments();  // ambil data terbaru
-        // Ekspor hanya jika ada data
-        if (data.length > 0) {
-          const workbook = XLSX.utils.book_new();
-          const worksheet = XLSX.utils.json_to_sheet(data);
-          XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments');
-          XLSX.writeFile(workbook, `payments_${month}_${year}.xlsx`);
-        }
-      } catch (error) {
-        console.error(error);
+    setConfirmAction({ type: 'generate' });
+  };
+
+  const handleGenerateConfirm = async () => {
+    if (!confirmAction || confirmAction.type !== 'generate') return;
+    try {
+      await paymentsApi.generate(month, year);
+      const data = await fetchPayments();  // ambil data terbaru
+      // Ekspor hanya jika ada data
+      if (data.length > 0) {
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments');
+        XLSX.writeFile(workbook, `payments_${month}_${year}.xlsx`);
       }
+    } catch (error) {
+      errorDev('[Payments] handleGenerateConfirm error:', error);
+    } finally {
+      setConfirmAction(null);
     }
   };
 
   const handleExport = () => {
     if (!payments || payments.length === 0) {
-      alert('Tidak ada data untuk diekspor.');
+      setAlertMsg('Tidak ada data untuk diekspor.');
       return;
     }
     const workbook = XLSX.utils.book_new();
@@ -55,13 +67,18 @@ const Payments = () => {
   };
 
   const handlePay = async (id: number) => {
-    if (confirm('Tandai tagihan ini sebagai lunas?')) {
-      try {
-        await paymentsApi.pay(id, {});
-        await fetchPayments();
-      } catch (error) {
-        console.error(error);
-      }
+    setConfirmAction({ type: 'pay', id });
+  };
+
+  const handlePayConfirm = async () => {
+    if (!confirmAction || confirmAction.type !== 'pay' || !confirmAction.id) return;
+    try {
+      await paymentsApi.pay(confirmAction.id, {});
+      await fetchPayments();
+    } catch (error) {
+      errorDev('[Payments] handlePayConfirm error:', error);
+    } finally {
+      setConfirmAction(null);
     }
   };
 

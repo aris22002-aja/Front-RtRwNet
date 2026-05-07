@@ -27,8 +27,9 @@ const Residents = () => {
   const [residents, setResidents] = useState<Resident[]>([]);
   const [houses, setHouses] = useState<House[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [formData, setFormData] = useState({
-    house_id: '',
+    house_id: 0,
     name: '',
     phone: '',
     ktp_number: '',
@@ -37,11 +38,20 @@ const Residents = () => {
   });
 
   const fetchData = () => {
-    residentsApi.getAll().then(setResidents);
-    housesApi.getAll().then((data: House[]) =>
-      setHouses(data.filter((h) => h.status === 'vacant'))
-    );
-  };
+    residentsApi.getAll().then((data) => {
+      const mapped = (Array.isArray(data) ? data : []).map((item: Record<string, unknown>) => ({
+        id: item.id as number,
+        name: item.name as string,
+        house_id: item.house_id as number,
+        phone: item.phone as string | undefined,
+        ktp_number: item.ktp_number as string | undefined,
+        is_owner: item.is_owner as boolean,
+        move_in_date: item.move_in_date as string,
+        block: item.block as string | undefined,
+        number: item.number as string | undefined,
+      }));
+      setResidents(mapped);
+    });
 
   useEffect(() => {
     fetchData();
@@ -53,7 +63,7 @@ const Residents = () => {
       setShowForm(false);
       fetchData();
       setFormData({
-        house_id: '',
+        house_id: 0,
         name: '',
         phone: '',
         ktp_number: '',
@@ -63,9 +73,14 @@ const Residents = () => {
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Yakin ingin menghapus penghuni ini?')) {
-      residentsApi.delete(id).then(fetchData);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await residentsApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      fetchData();
+    } catch (error) {
+      // silent error - UI stays clean
     }
   };
 
@@ -178,7 +193,7 @@ const Residents = () => {
                 <td>
                   <button
                     className="btn btn-sm"
-                    onClick={() => handleDelete(resident.id)}
+                    onClick={() => setDeleteTarget({ id: resident.id, name: resident.name })}
                     style={{ color: 'var(--danger)' }}
                   >
                     <Trash2 size={16} />

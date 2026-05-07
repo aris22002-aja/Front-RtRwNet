@@ -15,6 +15,13 @@ const Komunitas = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+
+  // Development-only error logger
+  const errorDev = (...args: unknown[]) => {
+    if (import.meta.env.DEV) console.error(...args);
+  };
+
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -59,18 +66,18 @@ const Komunitas = () => {
       setShowForm(false);
       fetchData();
     } catch (error) {
-      console.error(error);
+      errorDev('[Komunitas] handleTambah error:', error);
     }
   };
 
-  const handleHapus = async (id: number, name: string) => {
-    if (confirm(`Yakin ingin menghapus komunitas "${name}"?`)) {
-      try {
-        await komunitasApi.delete(id);
-        fetchData();
-      } catch (error) {
-        console.error(error);
-      }
+  const handleHapusConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await komunitasApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      fetchData();
+    } catch (error) {
+      errorDev('[Komunitas] handleHapusConfirm error:', error);
     }
   };
 
@@ -204,7 +211,7 @@ const Komunitas = () => {
             <div key={komunitas.id} className="card" style={{ position: 'relative' }}>
               {/* Tombol Hapus */}
               <button
-                onClick={() => handleHapus(komunitas.id, komunitas.name)}
+                onClick={() => setDeleteTarget({ id: komunitas.id, name: komunitas.name })}
                 style={{
                   position: 'absolute',
                   top: '10px',
