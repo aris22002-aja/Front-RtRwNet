@@ -222,16 +222,16 @@ const getDataSnapshot = async (): Promise<DataSnapshot> => {
     residents,
     payments,
   ] = await Promise.all([
-    api.get('/activities').then(res => res.data).catch(() => []),
-    api.get('/organizations').then(res => res.data).catch(() => []),
-    api.get('/products').then(res => res.data).catch(() => []),
-    api.get('/posts').then(res => res.data).catch(() => []),
-    api.get('/agendas').then(res => res.data).catch(() => []),
-    api.get('/kegiatan').then(res => res.data).catch(() => []),
-    api.get('/komunitas').then(res => res.data).catch(() => []),
-    api.get('/houses').then(res => res.data).catch(() => []),
-    api.get('/residents').then(res => res.data).catch(() => []),
-    api.get('/payments').then(res => res.data).catch(() => []),
+    api.get('/api/activities').then(res => res.data).catch(() => []),
+    api.get('/api/organizations').then(res => res.data).catch(() => []),
+    api.get('/api/products').then(res => res.data).catch(() => []),
+    api.get('/api/posts').then(res => res.data).catch(() => []),
+    api.get('/api/agendas').then(res => res.data).catch(() => []),
+    api.get('/api/kegiatan').then(res => res.data).catch(() => []),
+    api.get('/api/komunitas').then(res => res.data).catch(() => []),
+    api.get('/api/houses').then(res => res.data).catch(() => []),
+    api.get('/api/residents').then(res => res.data).catch(() => []),
+    api.get('/api/payments').then(res => res.data).catch(() => []),
   ]);
 
   return {
@@ -327,48 +327,48 @@ export const getActivities = () => api.get('/activities').then(res => res.data);
 export const activitiesApi = {
   getAll: () => api.get('/activities').then((res) => res.data),
   create: (data: ActivityPayload) => api.post('/activities', data).then((res) => res.data),
-  update: (id: number | string, data: ActivityPayload) => api.put(`/activities/${id}`, data).then((res) => res.data),
-  delete: (id: number | string) => api.delete(`/activities/${id}`).then((res) => res.data),
+  update: (id: number | string, data: ActivityPayload) => api.put(`/api/activities/${id}`, data).then((res) => res.data),
+  delete: (id: number | string) => api.delete(`/api/activities/${id}`).then((res) => res.data),
 };
 
-export const getOrganizations = () => api.get('/organizations').then(res => res.data);
+export const getOrganizations = () => api.get('/api/organizations').then(res => res.data);
 export const organizationsApi = {
-  getAll: () => api.get('/organizations').then(res => res.data),
-  create: (data: Omit<Organization, 'id'>) => api.post('/organizations', data).then(res => res.data),
-  update: (id: number, data: Partial<Organization>) => api.put(`/organizations/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/organizations/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/organizations').then(res => res.data),
+  create: (data: Omit<Organization, 'id'>) => api.post('/api/organizations', data).then(res => res.data),
+  update: (id: number, data: Partial<Organization>) => api.put(`/api/organizations/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/organizations/${id}`).then(res => res.data),
 };
 
-export const getProducts = () => api.get('/products').then(res => res.data);
+export const getProducts = () => api.get('/api/products').then(res => res.data);
 export const productsApi = {
-  getAll: () => api.get('/products').then(res => res.data),
-  create: (data: Omit<Product, 'id'>) => api.post('/products', data).then(res => res.data),
-  update: (id: number, data: Partial<Product>) => api.put(`/products/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/products/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/products').then(res => res.data),
+  create: (data: Omit<Product, 'id'>) => api.post('/api/products', data).then(res => res.data),
+  update: (id: number, data: Partial<Product>) => api.put(`/api/products/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/products/${id}`).then(res => res.data),
 };
 
-export const getPosts = () => api.get('/posts').then(res => res.data);
+export const getPosts = () => api.get('/api/posts').then(res => res.data);
 export const postsApi = {
-  getAll: () => api.get('/posts').then(res => res.data),
-  create: (data: Omit<Post, 'id'>) => api.post('/posts', data).then(res => res.data),
-  update: (id: number, data: Partial<Post>) => api.put(`/posts/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/posts/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/posts').then(res => res.data),
+  create: (data: Omit<Post, 'id'>) => api.post('/api/posts', data).then(res => res.data),
+  update: (id: number, data: Partial<Post>) => api.put(`/api/posts/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/posts/${id}`).then(res => res.data),
 };
 export const getResume = () => getDataSnapshot().then(buildResume);
 export const getStats = () => getDataSnapshot().then(buildStats);
 
 export const housesApi = {
-  getAll: () => api.get('/houses').then(res => res.data),
-  create: (data: Omit<House, 'id'>) => api.post('/houses', data).then(res => res.data),
-  update: (id: number, data: Partial<House>) => api.put(`/houses/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/houses/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/houses').then(res => res.data),
+  create: (data: Omit<House, 'id'>) => api.post('/api/houses', data).then(res => res.data),
+  update: (id: number, data: Partial<House>) => api.put(`/api/houses/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/houses/${id}`).then(res => res.data),
 };
 
 export const residentsApi = {
   getAll: async (): Promise<Array<Resident & { block: string; number: string }>> => {
     const [residents, houses] = await Promise.all([
-      api.get('/residents').then((res) => toRows(res.data)),
-      api.get('/houses').then((res) => toRows(res.data)),
+      api.get('/api/residents').then((res) => toRows(res.data)),
+      api.get('/api/houses').then((res) => toRows(res.data)),
     ]);
     const houseMap = new Map<number, ApiRow>(houses.map((house) => [toNumber(house.id), house]));
     return residents.map((resident, index) => {
@@ -383,16 +383,16 @@ export const residentsApi = {
       } as Resident & { block: string; number: string };
     });
   },
-  create: (data: Omit<Resident, 'id'>) => api.post('/residents', data).then(res => res.data),
-  update: (id: number, data: Partial<Resident>) => api.put(`/residents/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/residents/${id}`).then(res => res.data),
+  create: (data: Omit<Resident, 'id'>) => api.post('/api/residents', data).then(res => res.data),
+  update: (id: number, data: Partial<Resident>) => api.put(`/api/residents/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/residents/${id}`).then(res => res.data),
 };
 
 export const paymentsApi = {
   getAll: async (month: number, year: number): Promise<Array<Payment & { block: string; number: string }>> => {
     const [payments, houses] = await Promise.all([
-      api.get('/payments', { params: { month, year } }).then((res) => toRows(res.data)),
-      api.get('/houses').then((res) => toRows(res.data)),
+      api.get('/api/payments', { params: { month, year } }).then((res) => toRows(res.data)),
+      api.get('/api/houses').then((res) => toRows(res.data)),
     ]);
     const houseMap = new Map<number, ApiRow>(houses.map((house) => [toNumber(house.id), house]));
     return payments
@@ -406,28 +406,28 @@ export const paymentsApi = {
         } as Payment & { block: string; number: string };
       });
   },
-  generate: (month: number, year: number) => api.post('/payments/generate', { month, year }).then(res => res.data),
-  pay: (id: number, data: Partial<Payment>) => api.put(`/payments/${id}/pay`, data).then(res => res.data),
+  generate: (month: number, year: number) => api.post('/api/payments/generate', { month, year }).then(res => res.data),
+  pay: (id: number, data: Partial<Payment>) => api.put(`/api/payments/${id}/pay`, data).then(res => res.data),
 };
 
-export const getEvents = () => api.get('/kegiatan').then(res => res.data);
+export const getEvents = () => api.get('/api/kegiatan').then(res => res.data);
 export const kegiatanApi = {
-  getAll: () => api.get('/kegiatan').then(res => res.data),
-  create: (data: Omit<Kegiatan, 'id'>) => api.post('/kegiatan', data).then(res => res.data),
-  update: (id: number, data: Partial<Kegiatan>) => api.put(`/kegiatan/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/kegiatan/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/kegiatan').then(res => res.data),
+  create: (data: Omit<Kegiatan, 'id'>) => api.post('/api/kegiatan', data).then(res => res.data),
+  update: (id: number, data: Partial<Kegiatan>) => api.put(`/api/kegiatan/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/kegiatan/${id}`).then(res => res.data),
 };
 
-export const getCommunities = () => api.get('/komunitas').then(res => res.data);
+export const getCommunities = () => api.get('/api/komunitas').then(res => res.data);
 export const komunitasApi = {
-  getAll: () => api.get('/komunitas').then(res => res.data),
-  create: (data: Omit<Komunitas, 'id'>) => api.post('/komunitas', data).then(res => res.data),
-  update: (id: number, data: Partial<Komunitas>) => api.put(`/komunitas/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/komunitas/${id}`).then(res => res.data),
+  getAll: () => api.get('/api/komunitas').then(res => res.data),
+  create: (data: Omit<Komunitas, 'id'>) => api.post('/api/komunitas', data).then(res => res.data),
+  update: (id: number, data: Partial<Komunitas>) => api.put(`/api/komunitas/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/komunitas/${id}`).then(res => res.data),
 };
 
 export const getAgendas = (params: { month: number; year: number }) =>
-  api.get('/agendas', { params }).then((res) =>
+  api.get('/api/agendas', { params }).then((res) =>
     toRows(res.data).filter((agenda) => {
       const eventDate = toString(agenda.event_date);
       if (!eventDate) return true;
@@ -439,9 +439,9 @@ export const getAgendas = (params: { month: number; year: number }) =>
 
 export const agendasApi = {
   getAll: (params: { month: number; year: number }) => getAgendas(params),
-  create: (data: Omit<Agenda, 'id'>) => api.post('/agendas', data).then(res => res.data),
-  update: (id: number, data: Partial<Agenda>) => api.put(`/agendas/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/agendas/${id}`).then(res => res.data),
+  create: (data: Omit<Agenda, 'id'>) => api.post('/api/agendas', data).then(res => res.data),
+  update: (id: number, data: Partial<Agenda>) => api.put(`/api/agendas/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/agendas/${id}`).then(res => res.data),
 };
 
 export default api;
