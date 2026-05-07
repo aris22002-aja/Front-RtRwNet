@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import Houses from './pages/Houses';
 import Residents from './pages/Residents';
@@ -6,11 +7,11 @@ import Payments from './pages/Payments';
 import Agenda from './pages/Agenda';
 import Kegiatan from './pages/Kegiatan';
 import Komunitas from './pages/Komunitas';
-import Aktivitas from './pages/Aktivitas';      // ✅ tambahan
-import Postingan from './pages/Postingan';      // ✅ tambahan
-import Organisasi from './pages/Organisasi';   // ✅ tambahan
-import Produk from './pages/Produk';           // ✅ tambahan
-import WargaHome from './pages/WargaHome';     // ✅ untuk /resume
+import Aktivitas from './pages/Aktivitas';
+import Postingan from './pages/Postingan';
+import Organisasi from './pages/Organisasi';
+import Produk from './pages/Produk';
+import WargaHome from './pages/WargaHome';
 import {
   LayoutDashboard,
   Home,
@@ -142,26 +143,24 @@ function App() {
         </aside>
 
         <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/houses" element={<Houses />} />
-            <Route path="/residents" element={<Residents />} />
-            <Route path="/payments" element={<Payments />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/kegiatan" element={<Kegiatan />} />
-            <Route path="/komunitas" element={<Komunitas />} />
-
-            {/* Halaman yang sudah diperbaiki */}
-            <Route path="/resume" element={<WargaHome />} />
-            <Route path="/aktivitas" element={<Aktivitas />} />
-            <Route path="/postingan" element={<Postingan />} />
-            <Route path="/organisasi" element={<Organisasi />} />
-            <Route path="/produk" element={<Produk />} />
-
-            {/* Placeholder untuk halaman yang belum dibuat */}
-            <Route path="/pengguna" element={<Dashboard />} />
-            <Route path="/update-hari-ini" element={<Dashboard />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/houses" element={<Houses />} />
+              <Route path="/residents" element={<Residents />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/kegiatan" element={<Kegiatan />} />
+              <Route path="/komunitas" element={<Komunitas />} />
+              <Route path="/resume" element={<WargaHome />} />
+              <Route path="/aktivitas" element={<Aktivitas />} />
+              <Route path="/postingan" element={<Postingan />} />
+              <Route path="/organisasi" element={<Organisasi />} />
+              <Route path="/produk" element={<Produk />} />
+              <Route path="/pengguna" element={<Dashboard />} />
+              <Route path="/update-hari-ini" element={<Dashboard />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
       </div>
     </Router>

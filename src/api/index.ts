@@ -6,19 +6,28 @@ const API_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL).r
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  timeout: 10000, // 10s timeout to prevent infinite wait (DoS mitigation)
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+// Development-only logging to prevent data leaks in production
+const logDev = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.log(...args);
+};
+const errorDev = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.error(...args);
+};
+
 // Request interceptor - log semua request untuk debugging
 api.interceptors.request.use(
   (config) => {
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    logDev(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error);
+    errorDev('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
@@ -26,28 +35,24 @@ api.interceptors.request.use(
 // Response interceptor - tangani error dengan lebih baik
 api.interceptors.response.use(
   (response) => {
-    console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+    logDev(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
     return response;
   },
   (error) => {
     if (error.response) {
       // Server merespons dengan status error (4xx, 5xx)
-      console.error('[API Error Response]', {
+      errorDev('[API Error Response]', {
         status: error.response.status,
         data: error.response.data,
         url: error.config?.url,
       });
-      
-      const message = error.response.data?.message || error.response.data?.error || 'Terjadi kesalahan pada server';
-      alert(`Error ${error.response.status}: ${message}`);
+      // Remove alert(), let components handle errors
     } else if (error.request) {
       // Request dibuat tapi tidak ada response
-      console.error('[API No Response]', error.request);
-      alert('Tidak dapat terhubung ke server. Pastikan backend berjalan dan CORS dikonfigurasi dengan benar.');
+      errorDev('[API No Response]', error.request);
     } else {
       // Error saat setup request
-      console.error('[API Setup Error]', error.message);
-      alert(`Error: ${error.message}`);
+      errorDev('[API Setup Error]', error.message);
     }
     return Promise.reject(error);
   }
@@ -97,6 +102,73 @@ interface ResumeSummary {
   upcomingEvents: Array<{ name: string; date: string; location: string }>;
 }
 
+// Type definitions for API entities
+interface Organization {
+  id: number;
+  name: string;
+  description?: string;
+  created_at?: string;
+}
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description?: string;
+}
+
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  excerpt?: string;
+  date: string;
+}
+
+interface House {
+  id: number;
+  block: string;
+  number: string;
+  status: string;
+}
+
+interface Resident {
+  id: number;
+  name: string;
+  house_id: number;
+  phone?: string;
+}
+
+interface Payment {
+  id: number;
+  house_id: number;
+  month: number;
+  year: number;
+  amount: number;
+  status: string;
+}
+
+interface Agenda {
+  id: number;
+  title: string;
+  event_date: string;
+  location?: string;
+  description?: string;
+}
+
+interface Kegiatan {
+  id: number;
+  title: string;
+  date: string;
+  location?: string;
+}
+
+interface Komunitas {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 const toNumber = (value: unknown, fallback = 0): number => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value);
@@ -109,7 +181,7 @@ const toString = (value: unknown, fallback = ''): string =>
 const toRows = (value: unknown): ApiRow[] =>
   Array.isArray(value) ? value.filter((item): item is ApiRow => !!item && typeof item === 'object') : [];
 
-// ✅ Fungsi getDataSnapshot yang baru – tidak lagi bergantung pada endpoint /data
+// Fungsi getDataSnapshot yang baru – tidak lagi bergantung pada endpoint /data
 const getDataSnapshot = async (): Promise<DataSnapshot> => {
   const [
     activities,
@@ -235,24 +307,24 @@ export const activitiesApi = {
 export const getOrganizations = () => api.get('/organizations').then(res => res.data);
 export const organizationsApi = {
   getAll: () => api.get('/organizations').then(res => res.data),
-  create: (data: any) => api.post('/organizations', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/organizations/${id}`, data).then(res => res.data),
+  create: (data: Omit<Organization, 'id'>) => api.post('/organizations', data).then(res => res.data),
+  update: (id: number, data: Partial<Organization>) => api.put(`/organizations/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/organizations/${id}`).then(res => res.data),
 };
 
 export const getProducts = () => api.get('/products').then(res => res.data);
 export const productsApi = {
   getAll: () => api.get('/products').then(res => res.data),
-  create: (data: any) => api.post('/products', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/products/${id}`, data).then(res => res.data),
+  create: (data: Omit<Product, 'id'>) => api.post('/products', data).then(res => res.data),
+  update: (id: number, data: Partial<Product>) => api.put(`/products/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/products/${id}`).then(res => res.data),
 };
 
 export const getPosts = () => api.get('/posts').then(res => res.data);
 export const postsApi = {
   getAll: () => api.get('/posts').then(res => res.data),
-  create: (data: any) => api.post('/posts', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/posts/${id}`, data).then(res => res.data),
+  create: (data: Omit<Post, 'id'>) => api.post('/posts', data).then(res => res.data),
+  update: (id: number, data: Partial<Post>) => api.put(`/posts/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/posts/${id}`).then(res => res.data),
 };
 export const getResume = () => getDataSnapshot().then(buildResume);
@@ -260,13 +332,13 @@ export const getStats = () => getDataSnapshot().then(buildStats);
 
 export const housesApi = {
   getAll: () => api.get('/houses').then(res => res.data),
-  create: (data: any) => api.post('/houses', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/houses/${id}`, data).then(res => res.data),
+  create: (data: Omit<House, 'id'>) => api.post('/houses', data).then(res => res.data),
+  update: (id: number, data: Partial<House>) => api.put(`/houses/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/houses/${id}`).then(res => res.data),
 };
 
 export const residentsApi = {
-  getAll: async (): Promise<any[]> => {
+  getAll: async (): Promise<Array<Resident & { block: string; number: string }>> => {
     const [residents, houses] = await Promise.all([
       api.get('/residents').then((res) => toRows(res.data)),
       api.get('/houses').then((res) => toRows(res.data)),
@@ -281,16 +353,16 @@ export const residentsApi = {
         house_id: houseId,
         block: toString(house?.block),
         number: toString(house?.number),
-      };
+      } as Resident & { block: string; number: string };
     });
   },
-  create: (data: any) => api.post('/residents', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/residents/${id}`, data).then(res => res.data),
+  create: (data: Omit<Resident, 'id'>) => api.post('/residents', data).then(res => res.data),
+  update: (id: number, data: Partial<Resident>) => api.put(`/residents/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/residents/${id}`).then(res => res.data),
 };
 
 export const paymentsApi = {
-  getAll: async (month: number, year: number): Promise<any[]> => {
+  getAll: async (month: number, year: number): Promise<Array<Payment & { block: string; number: string }>> => {
     const [payments, houses] = await Promise.all([
       api.get('/payments', { params: { month, year } }).then((res) => toRows(res.data)),
       api.get('/houses').then((res) => toRows(res.data)),
@@ -304,26 +376,26 @@ export const paymentsApi = {
           ...payment,
           block: toString(house?.block, '-'),
           number: toString(house?.number, '-'),
-        };
+        } as Payment & { block: string; number: string };
       });
   },
   generate: (month: number, year: number) => api.post('/payments/generate', { month, year }).then(res => res.data),
-  pay: (id: number, data: any) => api.put(`/payments/${id}/pay`, data).then(res => res.data),
+  pay: (id: number, data: Partial<Payment>) => api.put(`/payments/${id}/pay`, data).then(res => res.data),
 };
 
 export const getEvents = () => api.get('/kegiatan').then(res => res.data);
 export const kegiatanApi = {
   getAll: () => api.get('/kegiatan').then(res => res.data),
-  create: (data: any) => api.post('/kegiatan', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/kegiatan/${id}`, data).then(res => res.data),
+  create: (data: Omit<Kegiatan, 'id'>) => api.post('/kegiatan', data).then(res => res.data),
+  update: (id: number, data: Partial<Kegiatan>) => api.put(`/kegiatan/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/kegiatan/${id}`).then(res => res.data),
 };
 
 export const getCommunities = () => api.get('/komunitas').then(res => res.data);
 export const komunitasApi = {
   getAll: () => api.get('/komunitas').then(res => res.data),
-  create: (data: any) => api.post('/komunitas', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/komunitas/${id}`, data).then(res => res.data),
+  create: (data: Omit<Komunitas, 'id'>) => api.post('/komunitas', data).then(res => res.data),
+  update: (id: number, data: Partial<Komunitas>) => api.put(`/komunitas/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/komunitas/${id}`).then(res => res.data),
 };
 
@@ -340,8 +412,8 @@ export const getAgendas = (params: { month: number; year: number }) =>
 
 export const agendasApi = {
   getAll: (params: { month: number; year: number }) => getAgendas(params),
-  create: (data: any) => api.post('/agendas', data).then(res => res.data),
-  update: (id: number, data: any) => api.put(`/agendas/${id}`, data).then(res => res.data),
+  create: (data: Omit<Agenda, 'id'>) => api.post('/agendas', data).then(res => res.data),
+  update: (id: number, data: Partial<Agenda>) => api.put(`/agendas/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/agendas/${id}`).then(res => res.data),
 };
 

@@ -26,6 +26,7 @@ const Aktivitas = () => {
     user: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ActivityItem | null>(null);
 
   const typeColors: Record<string, string> = useMemo(
     () => ({
@@ -275,7 +276,7 @@ const Aktivitas = () => {
                   position: 'absolute',
                   left: '-7px',
                   top: '1.3rem',
-                  border: '3px solid var(--bg)',
+                  border: '3px solid var(--bg-main)',
                 }}
               />
 
