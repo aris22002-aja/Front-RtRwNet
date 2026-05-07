@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAuth, User } from "firebase/auth";
+import { WS_ENDPOINT } from "../api";
 
 export interface WebSocketMessage {
   type: string;
@@ -16,8 +17,8 @@ export interface WebSocketMessage {
 }
 
 export interface UseWebSocketOptions {
-  /** WebSocket endpoint URL */
-  url: string;
+  /** WebSocket endpoint URL (defaults to WS_ENDPOINT from api config) */
+  url?: string;
   /** Query param name for token (default: "token") */
   tokenParam?: string;
   /** Reconnection interval in ms (default: 3000) */
@@ -57,9 +58,9 @@ export interface UseWebSocketReturn {
   clearMessages: () => void;
 }
 
-export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
+export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
   const {
-    url,
+    url = WS_ENDPOINT,
     tokenParam = "token",
     reconnectInterval = 3000,
     maxReconnectAttempts = 5,
@@ -268,7 +269,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
 // ============================================================
 import { useAuth } from "../contexts/AuthContext";
 
-export function useAuthWebSocket(options: Omit<UseWebSocketOptions, "user">): UseWebSocketReturn {
+export function useAuthWebSocket(options: Omit<UseWebSocketOptions, "url" | "user"> = {}): UseWebSocketReturn {
   const { user } = useAuth();
-  return useWebSocket({ ...options, user });
+  return useWebSocket({ ...options, url: WS_ENDPOINT, user });
 }

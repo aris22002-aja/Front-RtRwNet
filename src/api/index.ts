@@ -1,7 +1,18 @@
 import axios from 'axios';
 
-const DEFAULT_STAGING_API_URL = '/api';
-const API_URL = (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL).replace(/\/+$/, '');
+// Production Cloudflare Workers API URL
+const PRODUCTION_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
+const DEFAULT_STAGING_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
+const API_URL = import.meta.env.PROD
+  ? PRODUCTION_API_URL
+  : (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL);
+const WS_URL = import.meta.env.PROD
+  ? 'wss://backend-worker.aris-22002-priyanto.workers.dev/api/ws'
+  : (import.meta.env.VITE_WS_URL || 'ws://localhost:8787/api/ws');
+
+// Export for use in components
+export const API_BASE_URL = API_URL;
+export const WS_ENDPOINT = WS_URL;
 
 const api = axios.create({
   baseURL: API_URL,
