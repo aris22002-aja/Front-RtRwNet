@@ -4,7 +4,7 @@
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAuth, User } from "firebase/auth";
+import { getAuth, type User } from "firebase/auth";
 import { WS_ENDPOINT } from "../api";
 
 export interface WebSocketMessage {

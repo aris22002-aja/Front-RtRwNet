@@ -5,7 +5,7 @@
 import React, { useState, FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { EnvelopeSimple, LockKey, Eye, EyeSlash, HouseLine } from 'lucide-react';
+import { Mail, Key, Eye, EyeOff, Home } from 'lucide-react';
 import './Login.css';
 
 const Login: React.FC = () => {
@@ -89,7 +89,7 @@ const Login: React.FC = () => {
         {/* Logo & Branding */}
         <div className="login-header">
           <div className="login-logo">
-            <HouseLine size={48} weight="duotone" color="var(--primary)" />
+            <Home size={48} color="var(--primary)" />
           </div>
           <h1 className="login-title">Rt-Rw-Net</h1>
           <p className="login-subtitle">
@@ -111,7 +111,7 @@ const Login: React.FC = () => {
           <div className="input-group">
             <label htmlFor="email" className="label">Email</label>
             <div className="input-wrapper">
-              <EnvelopeSimple size={18} className="input-icon" />
+              <Mail size={18} className="input-icon" />
               <input
                 id="email"
                 type="email"
@@ -130,7 +130,7 @@ const Login: React.FC = () => {
           <div className="input-group">
             <label htmlFor="password" className="label">Password</label>
             <div className="input-wrapper">
-              <LockKey size={18} className="input-icon" />
+              <Key size={18} className="input-icon" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -149,7 +149,7 @@ const Login: React.FC = () => {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
               >
-                {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@
 // ============================================================
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useSSE } from '../hooks/useSSE';
 
 const SSE_DEMO_URL = `${import.meta.env.VITE_API_BASE_URL || 'https://backend-worker-staging.aris-22002-priyanto.workers.dev'}/api/sse`;

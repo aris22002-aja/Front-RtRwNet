@@ -39,7 +39,7 @@ const Residents = () => {
 
   const fetchData = () => {
     residentsApi.getAll().then((data) => {
-      const mapped = (Array.isArray(data) ? data : []).map((item: Record<string, unknown>) => ({
+      const mapped = (Array.isArray(data) ? data : []).map((item: any) => ({
         id: item.id as number,
         name: item.name as string,
         house_id: item.house_id as number,
@@ -52,6 +52,7 @@ const Residents = () => {
       }));
       setResidents(mapped);
     });
+  };
 
   useEffect(() => {
     fetchData();
@@ -104,7 +105,7 @@ const Residents = () => {
                 className="btn"
                 style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
                 value={formData.house_id}
-                onChange={(e) => setFormData({ ...formData, house_id: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, house_id: Number(e.target.value) })}
                 required
               >
                 <option value="">-- Pilih Rumah --</option>

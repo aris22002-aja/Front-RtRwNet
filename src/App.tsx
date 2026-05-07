@@ -26,9 +26,11 @@ import {
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Aktivitas = lazy(() => import('./pages/Aktivitas'));
 const Houses = lazy(() => import('./pages/Houses'));
-const Residents = lazy(() =>
-  import('./pages/Residents').then((module) => ({ default: module.default }))
-);
+const Residents = lazy(() => {
+  return import('./pages/Residents').then((module: any) => {
+    return { default: module.default };
+  });
+});
 const Payments = lazy(() => import('./pages/Payments'));
 const Komunitas = lazy(() => import('./pages/Komunitas'));
 const Kegiatan = lazy(() => import('./pages/Kegiatan'));
@@ -150,7 +152,7 @@ const AppLayout: React.FC = () => {
     <div className="app-container">
       <aside className="sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-          <Home size={28} weight="duotone" color="var(--primary)" />
+          <Home size={28} color="var(--primary)" />
           <h2 style={{ margin: 0 }}>RtRwNet</h2>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1.5rem 0' }}>
