@@ -322,11 +322,11 @@ const buildResume = (snapshot: DataSnapshot): ResumeSummary => {
   };
 };
 
-export const getActivities = () => api.get('/activities').then(res => res.data);
+export const getActivities = () => api.get('/api/activities').then(res => res.data);
 
 export const activitiesApi = {
-  getAll: () => api.get('/activities').then((res) => res.data),
-  create: (data: ActivityPayload) => api.post('/activities', data).then((res) => res.data),
+  getAll: () => api.get('/api/activities').then((res) => res.data),
+  create: (data: ActivityPayload) => api.post('/api/activities', data).then((res) => res.data),
   update: (id: number | string, data: ActivityPayload) => api.put(`/api/activities/${id}`, data).then((res) => res.data),
   delete: (id: number | string) => api.delete(`/api/activities/${id}`).then((res) => res.data),
 };
