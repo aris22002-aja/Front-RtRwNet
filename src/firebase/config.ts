@@ -21,7 +21,16 @@ const firebaseConfig = {
 // --- Singleton Initialization ---
 const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth: Auth = getAuth(app);
-const database: Database = getDatabase(app);
+
+// Validate databaseURL before initializing RTDB
+const database = firebaseConfig.databaseURL
+  ? getDatabase(app)
+  : (() => {
+      if (import.meta.env.DEV) {
+        console.warn('[Firebase] databaseURL not configured. Realtime Database disabled.');
+      }
+      return null;
+    })() as Database | null;
 
 // --- Google SSO Provider ---
 const googleProvider = new GoogleAuthProvider();
@@ -77,6 +86,10 @@ export const observeAuthState = (callback: (user: User | null) => void): (() => 
  * Store user profile in Realtime Database
  */
 export const saveUserProfile = async (uid: string, profile: Record<string, unknown>): Promise<void> => {
+  if (!database) {
+    if (import.meta.env.DEV) console.warn('[Firebase] saveUserProfile skipped: databaseURL not configured.');
+    return;
+  }
   await set(ref(database, `users/${uid}`), {
     ...profile,
     updatedAt: new Date().toISOString(),
@@ -87,6 +100,10 @@ export const saveUserProfile = async (uid: string, profile: Record<string, unkno
  * Retrieve user profile from Realtime Database
  */
 export const getUserProfile = async (uid: string): Promise<Record<string, unknown> | null> => {
+  if (!database) {
+    if (import.meta.env.DEV) console.warn('[Firebase] getUserProfile skipped: databaseURL not configured.');
+    return null;
+  }
   const snapshot = await get(ref(database, `users/${uid}`));
   return snapshot.exists() ? snapshot.val() : null;
 };
