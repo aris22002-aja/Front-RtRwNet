@@ -5,6 +5,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { RoleProvider } from './contexts/RoleContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import {
   LayoutDashboard,
@@ -24,6 +25,8 @@ import {
 
 // Lazy load pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DashboardPengurus = lazy(() => import('./pages/DashboardPengurus'));
+const DashboardWarga = lazy(() => import('./pages/DashboardWarga'));
 const Aktivitas = lazy(() => import('./pages/Aktivitas'));
 const Houses = lazy(() => import('./pages/Houses'));
 const Residents = lazy(() => {
@@ -136,7 +139,9 @@ function App() {
             path="/*"
             element={
               <ProtectedRoute>
-                <AppLayout />
+                <RoleProvider>
+                  <AppLayout />
+                </RoleProvider>
               </ProtectedRoute>
             }
           />
@@ -221,13 +226,16 @@ const AppLayout: React.FC = () => {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard" element={<DashboardPengurus />} />
+              <Route path="/dashboard-pengurus" element={<DashboardPengurus />} />
+              <Route path="/dashboard-warga" element={<DashboardWarga />} />
               <Route path="/houses" element={<Houses />} />
               <Route path="/residents" element={<Residents />} />
               <Route path="/payments" element={<Payments />} />
               <Route path="/aktivitas" element={<Aktivitas />} />
               <Route path="/kegiatan" element={<Kegiatan />} />
               <Route path="/komunitas" element={<Komunitas />} />
+              <Route path="/warga" element={<DashboardWarga />} />
               <Route path="/warga/organisasi" element={<Komunitas />} />
               <Route path="/warga/kegiatan" element={<Kegiatan />} />
               <Route path="/warga/aktivitas" element={<Aktivitas />} />
