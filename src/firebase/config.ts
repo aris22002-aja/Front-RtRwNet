@@ -3,11 +3,11 @@
 // ============================================================
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAnalytics, Analytics } from 'firebase/analytics';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User, Auth } from 'firebase/auth';
 import { getDatabase, ref, set, get, Database } from 'firebase/database';
 
 // --- Environment Variables ---
-// Obtain from Firebase Console > Project Settings > Your Apps > Web App
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
@@ -16,11 +16,17 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
 };
 
 // --- Singleton Initialization ---
 const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth: Auth = getAuth(app);
+
+// Initialize Analytics (only in production to avoid errors in development)
+const analytics: Analytics | null = import.meta.env.PROD && firebaseConfig.measurementId
+  ? getAnalytics(app)
+  : null;
 
 // Validate databaseURL before initializing RTDB
 const database = firebaseConfig.databaseURL
@@ -36,7 +42,7 @@ const database = firebaseConfig.databaseURL
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  hd: import.meta.env.VITE_AUTH_DOMAIN || undefined, // Restrict to specific domain (e.g., gmail.com)
+  hd: import.meta.env.VITE_GOOGLE_HD_DOMAIN || undefined,
 });
 
 // --- Auth Functions ---
@@ -46,8 +52,23 @@ googleProvider.setCustomParameters({
  * @returns User credential
  */
 export const signInWithGoogle = async (): Promise<User> => {
-  const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error: unknown) {
+    if (import.meta.env.DEV) console.error('[Firebase] Google signIn error:', error);
+    // Re-throw with cleaner message
+    if (error && typeof error === 'object' && 'code' in error) {
+      const firebaseError = error as { code: string; message?: string };
+      if (firebaseError.code === 'auth/popup-closed-by-user') {
+        throw new Error('Login dibatalkan. Silakan coba lagi.');
+      }
+      if (firebaseError.code === 'auth/cancelled-popup-request') {
+        throw new Error('Hanya satu jendela login yang diizinkan.');
+      }
+    }
+    throw error;
+  }
 };
 
 /**
@@ -108,4 +129,4 @@ export const getUserProfile = async (uid: string): Promise<Record<string, unknow
   return snapshot.exists() ? snapshot.val() : null;
 };
 
-export { app, auth, database };
+export { app, auth, database, analytics };

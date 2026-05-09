@@ -4,7 +4,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onIdTokenChanged } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth, getUserProfile } from '../firebase/config';
 
 // Role definitions matching backend roles.ts
 export enum Role {
@@ -55,6 +55,7 @@ interface UserProfile {
   name: string | null;
   photoURL: string | null;
   role: Role;
+  roleDisplay?: string;
   rt?: string;
   rw?: string;
 }
@@ -85,20 +86,22 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
       setFirebaseUser(user);
 
       if (user) {
-        // Get custom claims from ID token
-        const idTokenResult = await user.getIdTokenResult();
-        const role = (idTokenResult.claims.role as Role) || Role.WARGANEGARA;
-        const rt = idTokenResult.claims.rt as string | undefined;
-        const rw = idTokenResult.claims.rw as string | undefined;
+        // Get user profile from Realtime Database
+        const userDoc = await getUserProfile(user.uid);
+        const role = (userDoc?.role as Role) || Role.WARGANEGARA;
+        const rt = userDoc?.rt as string | undefined;
+        const rw = userDoc?.rw as string | undefined;
+        const roleDisplay = userDoc?.roleDisplay as string | undefined;
 
         setUserProfile({
           uid: user.uid,
           email: user.email,
           name: user.displayName,
           photoURL: user.photoURL,
-          role: role || Role.WARGANEGARA,
+          role,
           rt,
           rw,
+          roleDisplay,
         });
       } else {
         setUserProfile(null);

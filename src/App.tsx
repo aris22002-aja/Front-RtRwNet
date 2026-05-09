@@ -38,6 +38,7 @@ const Payments = lazy(() => import('./pages/Payments'));
 const Komunitas = lazy(() => import('./pages/Komunitas'));
 const Kegiatan = lazy(() => import('./pages/Kegiatan'));
 const Login = lazy(() => import('./pages/Login'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 
 // --- Page Loader ---
 const PageLoader: React.FC = () => (
