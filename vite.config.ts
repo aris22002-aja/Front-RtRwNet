@@ -8,7 +8,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://backend-worker-staging.aris-22002-priyanto.workers.dev',
+        target: 'https://backend-worker.aris-22002-priyanto.workers.dev',
         changeOrigin: true,
         secure: true,
       }
