@@ -16,29 +16,37 @@ export const AdminPanel: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [searchEmail, setSearchEmail] = useState('');
 
-  // Hardcoded admin UID untuk demo - bisa dari Firebase Auth users list
-  const adminUsers = [
-    { uid: 'DJWC9oLAGZhIKVDp77G4JCXdtqx2', email: 'aris.22002.priyanto@gmail.com', name: 'Арис Приянто/Aris Priyanto', role: Role.KETUA_RW as Role },
-  ];
-
+  // Dynamic admin lookup from Firebase RTDB - queries users with managerial roles
   useEffect(() => {
-    // Load demo users dengan role dari RTDB
-    const loadUsers = async () => {
-      const loadedUsers = await Promise.all(
-        adminUsers.map(async (u) => {
-          const profile = await getUserProfile(u.uid);
-          return {
-            uid: u.uid,
-            email: u.email,
-            name: u.name,
-            role: (profile?.role as Role) || u.role,
-            roleDisplay: profile?.roleDisplay || RoleDisplayName[u.role],
-          };
-        })
-      );
-      setUsers(loadedUsers);
+    const loadUsersFromRTDB = async () => {
+      try {
+        const { getDatabase, ref, get, DataSnapshot } = await import('firebase/database');
+        const db = getDatabase();
+        const usersRef = ref(db, 'users');
+        
+        const snapshot = await get(usersRef);
+        
+        const usersData: Array<{ uid: string; email: string; role: Role; roleDisplay: string; name: string }> = [];
+        snapshot.forEach((child) => {
+          const data = child.val() || {};
+          const role = data.role as Role;
+          if ([Role.KETUA_RW, Role.KETUA_RT].includes(role)) {
+            usersData.push({
+              uid: child.key as string,
+              email: data.email || '',
+              name: data.name || data.email || 'Unknown',
+              role: role,
+              roleDisplay: data.roleDisplay || RoleDisplayName[role] || 'Warga',
+            });
+          }
+        });
+        setUsers(usersData);
+      } catch (err) {
+        console.error('Failed to load users from RTDB:', err);
+        setUsers([]);
+      }
     };
-    loadUsers();
+    loadUsersFromRTDB();
   }, []);
 
   const handleSaveRole = async () => {

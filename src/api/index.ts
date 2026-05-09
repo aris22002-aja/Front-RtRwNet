@@ -1,4 +1,6 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { getAuth, getIdToken } from 'firebase/auth';
+import { app as firebaseApp } from '../firebase/config';
 
 // Production Cloudflare Workers API URL
 const PRODUCTION_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
@@ -9,6 +11,10 @@ const API_URL = import.meta.env.PROD
 const WS_URL = import.meta.env.PROD
   ? 'wss://backend-worker.aris-22002-priyanto.workers.dev/api/ws'
   : (import.meta.env.VITE_WS_URL || 'ws://localhost:8787/api/ws');
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY = 1000; // 1 second
 
 // Export for use in components
 export const API_BASE_URL = API_URL;
@@ -31,10 +37,32 @@ const errorDev = (...args: unknown[]) => {
   if (import.meta.env.DEV) console.error(...args);
 };
 
-// Request interceptor - log semua request untuk debugging
+// Helper to get Firebase token
+const getFirebaseToken = async (): Promise<string | null> => {
+  try {
+    const auth = getAuth(firebaseApp);
+    const user = auth.currentUser;
+    if (user) {
+      return await getIdToken(user);
+    }
+    return null;
+  } catch (err) {
+    errorDev('[Auth Token Error]', err);
+    return null;
+  }
+};
+
+// Request interceptor - inject Firebase token + logging
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     logDev(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
+    
+    // Inject Firebase ID token as Bearer token
+    const token = await getFirebaseToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -43,7 +71,25 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - tangani error dengan lebih baik
+// Retry helper with exponential backoff
+const retryRequest = async (error: AxiosError, retries: number = 0): Promise<AxiosResponse> => {
+  const shouldRetry = 
+    retries < MAX_RETRIES && 
+    (!error.response || (error.response.status >= 500 && error.response.status < 600));
+  
+  if (!shouldRetry) {
+    throw error;
+  }
+
+  const delay = BASE_RETRY_DELAY * Math.pow(2, retries);
+  logDev(`[API Retry] Attempt ${retries + 1}/${MAX_RETRIES} after ${delay}ms`);
+  
+  await new Promise(resolve => setTimeout(resolve, delay));
+  
+  return api.request(error.config!);
+};
+
+// Response interceptor - tangani error dengan lebih baik + retry
 api.interceptors.response.use(
   (response) => {
     logDev(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
@@ -57,10 +103,10 @@ api.interceptors.response.use(
         data: error.response.data,
         url: error.config?.url,
       });
-      // Remove alert(), let components handle errors
     } else if (error.request) {
-      // Request dibuat tapi tidak ada response
-      errorDev('[API No Response]', error.request);
+      // Request dibuat tapi tidak ada response - retry with backoff
+      errorDev('[API No Response] Retrying...', error.request);
+      return retryRequest(error);
     } else {
       // Error saat setup request
       errorDev('[API Setup Error]', error.message);
@@ -178,14 +224,6 @@ interface Komunitas {
   id: number;
   name: string;
   description?: string;
-}
-
-// Activity payload type for type-safe create/update operations
-interface ActivityPayload {
-  type: string;
-  time: string;
-  message: string;
-  user?: string;
 }
 
 // Activity payload type for type-safe create/update operations
