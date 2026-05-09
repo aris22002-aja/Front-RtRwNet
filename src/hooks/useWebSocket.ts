@@ -105,19 +105,23 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         return;
       }
 
-      // Build WebSocket URL with token
-      const wsUrl = new URL(url);
-      wsUrl.searchParams.set(tokenParam, token);
+      // Security: Send token via first message instead of URL param
+      // This prevents token leakage in URLs and logs
+      const ws = new WebSocket(url);
 
-      // Create WebSocket
-      const ws = new WebSocket(wsUrl.toString());
-
-      // Handle open
+      // Send auth token immediately after connection
       ws.onopen = () => {
         console.log("[WS] Connected");
         setStatus("connected");
         setError(null);
         reconnectCountRef.current = 0;
+
+        // Send auth token as first message for server verification
+        ws.send(JSON.stringify({ 
+          type: "auth", 
+          token: token,
+          timestamp: Date.now() 
+        }));
 
         // Start heartbeat
         if (enableHeartbeat) {

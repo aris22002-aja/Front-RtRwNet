@@ -83,10 +83,27 @@ export const useSSE = (options: SSEOptions): UseSSEReturn => {
         token = '';
       }
 
-      // Append token as query param
-      const sseUrl = token ? `${url}?token=${encodeURIComponent(token)}` : url;
+      // Security: Use Authorization header via cookie-based auth
+      // SSE with Bearer token requires a special flow: set cookie then connect
+      // Since EventSource doesn't support custom headers, we use a secure cookie approach
+      const sseUrl = `${url}`;
+      
+      // Set auth cookie via a HEAD request with Authorization
+      if (token) {
+        try {
+          await fetch(sseUrl, {
+            method: 'HEAD',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            credentials: 'include'
+          });
+        } catch {
+          // Ignore cookie setting errors - SSE will still try to connect
+        }
+      }
 
-      const eventSource = new EventSource(sseUrl);
+      const eventSource = new EventSource(sseUrl, { withCredentials: true });
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
