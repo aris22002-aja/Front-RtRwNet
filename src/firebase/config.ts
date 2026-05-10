@@ -4,7 +4,18 @@
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAnalytics, Analytics } from 'firebase/analytics';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, User, Auth } from 'firebase/auth';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  User, 
+  Auth, 
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail 
+} from 'firebase/auth';
 import { getDatabase, ref, set, get, Database } from 'firebase/database';
 
 // --- Environment Variables ---
@@ -49,7 +60,6 @@ googleProvider.setCustomParameters({
 
 /**
  * Sign in with Google Account (SSO)
- * @returns User credential
  */
 export const signInWithGoogle = async (): Promise<User> => {
   try {
@@ -57,7 +67,6 @@ export const signInWithGoogle = async (): Promise<User> => {
     return result.user;
   } catch (error: unknown) {
     if (import.meta.env.DEV) console.error('[Firebase] Google signIn error:', error);
-    // Re-throw with cleaner message
     if (error && typeof error === 'object' && 'code' in error) {
       const firebaseError = error as { code: string; message?: string };
       if (firebaseError.code === 'auth/popup-closed-by-user') {
@@ -92,6 +101,13 @@ export const registerWithEmail = async (email: string, password: string): Promis
  */
 export const logout = async (): Promise<void> => {
   await signOut(auth);
+};
+
+/**
+ * Send password reset email
+ */
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  await firebaseSendPasswordResetEmail(auth, email);
 };
 
 /**

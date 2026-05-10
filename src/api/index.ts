@@ -3,13 +3,13 @@ import { getAuth, getIdToken } from 'firebase/auth';
 import { app as firebaseApp } from '../firebase/config';
 
 // Production Cloudflare Workers API URL
-const PRODUCTION_API_URL = 'https://rt-rw-net.aris-22002-priyanto.workers.dev';
-const DEFAULT_STAGING_API_URL = 'https://rt-rw-net.aris-22002-priyanto.workers.dev';
+const PRODUCTION_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
+const DEFAULT_STAGING_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
 const API_URL = import.meta.env.PROD
   ? PRODUCTION_API_URL
   : (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL);
 const WS_URL = import.meta.env.PROD
-  ? 'wss://rt-rw-net.aris-22002-priyanto.workers.dev/api/ws'
+  ? 'wss://backend-worker.aris-22002-priyanto.workers.dev/api/ws'
   : (import.meta.env.VITE_WS_URL || 'ws://localhost:8787/api/ws');
 
 // Retry configuration
