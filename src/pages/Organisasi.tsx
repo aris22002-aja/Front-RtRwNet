@@ -42,7 +42,7 @@ const Organisasi = () => {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Organisasi</h1>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Struktur organisasi & kepengurusan Graha Harmony 5
+          Struktur organisasi & kepengurusan Grand Harmony 5
         </p>
       </div>
 

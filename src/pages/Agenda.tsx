@@ -65,7 +65,7 @@ const Agenda = () => {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Agenda Kegiatan</h1>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Jadwal kegiatan warga Graha Harmony 5
+          Jadwal kegiatan warga Grand Harmony 5
         </p>
       </div>
 

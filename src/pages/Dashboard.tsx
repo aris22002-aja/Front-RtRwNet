@@ -73,7 +73,7 @@ const Dashboard = () => {
       {/* Header Dashboard */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Dashboard RtRwNet</h1>
-        <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Graha Harmony 5</p>
+        <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Grand Harmony 5</p>
       </div>
 
       {/* Baris 1: Statistik Umum */}
@@ -203,7 +203,7 @@ const Dashboard = () => {
           </ul>
         ) : (
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            Belum ada pembaruan hari ini. Tetap pantau untuk info terbaru seputar Graha Harmony 5.
+            Belum ada pembaruan hari ini. Tetap pantau untuk info terbaru seputar Grand Harmony 5.
           </p>
         )}
       </div>
@@ -213,7 +213,7 @@ const Dashboard = () => {
         <h3>Selamat Datang di Sistem Pengelolaan Lingkungan</h3>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
           Gunakan menu di samping untuk mengelola data rumah, penghuni, pembayaran iuran bulanan (IPL), serta informasi
-          warga Graha Harmony 5.
+          warga Grand Harmony 5.
         </p>
       </div>
     </div>

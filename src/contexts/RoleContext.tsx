@@ -1,73 +1,41 @@
 // ============================================================
-// RoleContext — Role-Based Access Control (RBAC) Provider
+// RoleContext.tsx - Role-Based Access Control (RBAC)
+// Master Admin: aris.22002.priyanto@gmail.com
 // ============================================================
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onIdTokenChanged } from 'firebase/auth';
-import { auth, getUserProfile } from '../firebase/config';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { getUserProfile, auth } from '../firebase/config';
 
-// Role definitions matching backend roles.ts
-export enum Role {
-  SUPER_ADMIN = 'super_admin',
-  KETUA_RW = 'ketua_rw',
-  KETUA_RT = 'ketua_rt',
-  SEKRETARIS = 'sekretaris',
-  BENDAHARA = 'bendahara',
-  WARGANEGARA = 'warga',
-  KARANG_TARUNA = 'karang_taruna',
-}
+export type Role = 'admin' | 'kepala_lingkungan' | 'ketua_rw' | 'ketua_rt' | 'rt' | 'rw' | 'warga';
 
-// Role display names
-export const RoleDisplayName: Record<Role, string> = {
-  [Role.SUPER_ADMIN]: 'Super Admin',
-  [Role.KETUA_RW]: 'Ketua RW',
-  [Role.KETUA_RT]: 'Ketua RT',
-  [Role.SEKRETARIS]: 'Sekretaris',
-  [Role.BENDAHARA]: 'Bendahara',
-  [Role.WARGANEGARA]: 'Warga',
-  [Role.KARANG_TARUNA]: 'Karang Taruna',
-};
-
-// Permission helpers
-export const PERMISSIONS = {
-  MANAGE_RESIDENTS: [Role.SUPER_ADMIN, Role.KETUA_RW, Role.KETUA_RT, Role.SEKRETARIS],
-  MANAGE_PAYMENTS: [Role.SUPER_ADMIN, Role.KETUA_RW, Role.KETUA_RT, Role.BENDAHARA],
-  MANAGE_HOUSES: [Role.SUPER_ADMIN, Role.KETUA_RW, Role.KETUA_RT, Role.SEKRETARIS],
-  MANAGE_USERS: [Role.SUPER_ADMIN, Role.KETUA_RW, Role.KETUA_RT],
-  READ_ONLY: [Role.WARGANEGARA, Role.KARANG_TARUNA],
-  VIEW_ALL: [Role.SUPER_ADMIN, Role.KETUA_RW, Role.KETUA_RT, Role.SEKRETARIS, Role.BENDAHARA],
-};
-
-// Check if role has CRUD access
-export const canCRUD = (role: Role): boolean => {
-  return !PERMISSIONS.READ_ONLY.includes(role);
-};
-
-// Check if role can manage specific feature
-export const canManageFeature = (role: Role, feature: 'residents' | 'payments' | 'houses' | 'users'): boolean => {
-  const featureKey = `MANAGE_${feature.toUpperCase()}s` as keyof typeof PERMISSIONS;
-  return PERMISSIONS[featureKey]?.includes(role) ?? false;
-};
-
-interface UserProfile {
+export interface UserProfile {
   uid: string;
   email: string | null;
-  name: string | null;
+  displayName: string | null;
   photoURL: string | null;
   role: Role;
-  roleDisplay?: string;
+  block?: string;
   rt?: string;
-  rw?: string;
+  createdAt?: string;
 }
 
+// Master Admin Email
+const ADMIN_EMAIL = 'aris.22002.priyanto@gmail.com';
+
 interface RoleContextType {
-  user: UserProfile | null;
-  firebaseUser: User | null;
+  user: User | null;
+  profile: UserProfile | null;
   loading: boolean;
-  isPengurus: boolean;
-  isWarga: boolean;
-  hasPermission: (feature: 'residents' | 'payments' | 'houses' | 'users') => boolean;
-  logout: () => Promise<void>;
+  role: Role | null;
+  isAdmin: boolean;
+  isRW: boolean;
+  isRT: boolean;
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  checkRole: (roles: Role[]) => boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -77,65 +45,147 @@ interface RoleProviderProps {
 }
 
 export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      setFirebaseUser(user);
-
-      if (user) {
-        // Get user profile from Realtime Database
-        const userDoc = await getUserProfile(user.uid);
-        const role = (userDoc?.role as Role) || Role.WARGANEGARA;
-        const rt = userDoc?.rt as string | undefined;
-        const rw = userDoc?.rw as string | undefined;
-        const roleDisplay = userDoc?.roleDisplay as string | undefined;
-
-        setUserProfile({
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName,
-          photoURL: user.photoURL,
+  // Load user profile from Firebase RTDB
+  const loadProfile = async (firebaseUser: User) => {
+    try {
+      const data = await getUserProfile(firebaseUser.uid);
+      if (data) {
+        // Check if admin by email
+        const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+        const role = (isMasterAdmin ? 'admin' : (data.role as Role)) || 'warga';
+        
+        const userProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
           role,
-          rt,
-          rw,
-          roleDisplay,
-        });
+          block: data.block as string,
+          rt: data.rt as string,
+          createdAt: data.createdAt as string,
+        };
+        setProfile(userProfile);
       } else {
-        setUserProfile(null);
+        // New user - set default role
+        const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+        const defaultRole: Role = isMasterAdmin ? 'admin' : 'warga';
+        
+        const newProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          role: defaultRole,
+        };
+        setProfile(newProfile);
       }
-
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const logout = async (): Promise<void> => {
-    const { logout: firebaseLogout } = await import('../firebase/config');
-    await firebaseLogout();
+    } catch (error) {
+      console.error('[RoleContext] Load profile error:', error);
+      // Fallback: set admin for master email
+      const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+      setProfile({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        role: isMasterAdmin ? 'admin' : 'warga',
+      });
+    }
   };
 
-  const isPengurus = userProfile ? !PERMISSIONS.READ_ONLY.includes(userProfile.role) : false;
-  const isWarga = userProfile ? PERMISSIONS.READ_ONLY.includes(userProfile.role) : false;
+  // Watch auth state with timeout fallback
+  useEffect(() => {
+    let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
 
-  const hasPermission = (feature: 'residents' | 'payments' | 'houses' | 'users'): boolean => {
-    if (!userProfile) return false;
-    return canManageFeature(userProfile.role, feature);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        // Set timeout as safety net (5 seconds)
+        timeoutId = setTimeout(() => {
+          if (isMounted && !profile) {
+            console.warn('[RoleContext] RTDB timeout, using fallback profile');
+            const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+            setProfile({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              role: isMasterAdmin ? 'admin' : 'warga',
+            });
+            setLoading(false);
+          }
+        }, 5000);
+
+        try {
+          await loadProfile(firebaseUser);
+        } catch (error) {
+          console.error('[RoleContext] Load profile error:', error);
+          const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+          setProfile({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            role: isMasterAdmin ? 'admin' : 'warga',
+          });
+        }
+      } else {
+        setProfile(null);
+      }
+      // Only set loading=false after profile is ready
+      if (isMounted) {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
+  }, []);
+
+  // Role check helpers
+  const checkIsAdmin = () => profile?.role === 'admin' || profile?.role === 'kepala_lingkungan';
+  const checkIsRW = () => ['ketua_rw', 'rw'].includes(profile?.role || '');
+  const checkIsRT = () => ['ketua_rt', 'rt'].includes(profile?.role || '');
+
+  // CRUD permission checks
+  const canCreate = ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt', 'rt', 'rw'].includes(profile?.role || '');
+  const canUpdate = ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt'].includes(profile?.role || '');
+  const canDelete = ['admin', 'kepala_lingkungan'].includes(profile?.role || '');
+
+  // Check if user has one of specified roles
+  const checkRole = (roles: Role[]) => roles.includes(profile?.role as Role);
+
+  // Refresh profile
+  const refreshProfile = async () => {
+    if (user) {
+      await loadProfile(user);
+    }
   };
 
   return (
     <RoleContext.Provider
       value={{
-        user: userProfile,
-        firebaseUser,
+        user,
+        profile,
         loading,
-        isPengurus,
-        isWarga,
-        hasPermission,
-        logout,
+        role: profile?.role || null,
+        isAdmin: checkIsAdmin(),
+        isRW: checkIsRW(),
+        isRT: checkIsRT(),
+        canCreate,
+        canUpdate,
+        canDelete,
+        checkRole,
+        refreshProfile,
       }}
     >
       {children}
@@ -143,11 +193,45 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
   );
 };
 
-// Hook for accessing role context
 export const useRole = (): RoleContextType => {
   const context = useContext(RoleContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useRole must be used within a RoleProvider');
   }
   return context;
+};
+
+// Export helper for checking admin email
+export const isAdminEmail = (email: string | null): boolean => {
+  return email === ADMIN_EMAIL;
+};
+
+// Export role display names
+export const ROLE_DISPLAY_NAMES: Record<Role, string> = {
+  admin: 'Admin',
+  kepala_lingkungan: 'Kepala Lingkungan',
+  ketua_rw: 'Ketua RW',
+  ketua_rt: 'Ketua RT',
+  rt: 'RT',
+  rw: 'RW',
+  warga: 'Warga'
+};
+
+// Export permission matrix
+export const PERMISSIONS = {
+  houses: {
+    create: ['admin', 'kepala_lingkungan', 'ketua_rw'],
+    update: ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt'],
+    delete: ['admin', 'kepala_lingkungan']
+  },
+  activities: {
+    create: ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt', 'rt', 'rw'],
+    update: ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt'],
+    delete: ['admin', 'kepala_lingkungan']
+  },
+  payments: {
+    create: ['admin', 'kepala_lingkungan', 'ketua_rw', 'ketua_rt', 'rt'],
+    update: ['admin', 'kepala_lingkungan', 'ketua_rw'],
+    delete: ['admin', 'kepala_lingkungan']
+  }
 };

@@ -5,7 +5,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { RoleProvider } from './contexts/RoleContext';
+import { RoleProvider, useRole } from './contexts/RoleContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import {
   LayoutDashboard,
@@ -37,7 +37,7 @@ const Residents = lazy(() => {
 const Payments = lazy(() => import('./pages/Payments'));
 const Komunitas = lazy(() => import('./pages/Komunitas'));
 const Kegiatan = lazy(() => import('./pages/Kegiatan'));
-const Login = lazy(() => import('./pages/Login'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 
 // --- Page Loader ---
@@ -125,35 +125,36 @@ const LogoutButton: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      >
-        <Routes>
-          {/* Public Route */}
-          <Route path="/login" element={<Login />} />
+      <RoleProvider>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
+          <Routes>
+            {/* Public Route with RoleProvider */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* Protected Routes with Layout */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <RoleProvider>
+            {/* Protected Routes with Layout */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
                   <AppLayout />
-                </RoleProvider>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
+      </RoleProvider>
     </AuthProvider>
   );
 }
 
 // --- Main Layout ---
 const AppLayout: React.FC = () => {
+  const { isAdmin, isRW, isRT } = useRole();
   return (
     <div className="app-container">
       <aside className="sidebar">
@@ -162,7 +163,7 @@ const AppLayout: React.FC = () => {
           <h2 style={{ margin: 0 }}>RtRwNet</h2>
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1.5rem 0' }}>
-          Graha Harmony 5
+          Grand Harmony 5
         </p>
         <nav>
           <ul className="nav-links">
@@ -227,25 +228,27 @@ const AppLayout: React.FC = () => {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/dashboard" element={<DashboardPengurus />} />
-              <Route path="/dashboard-pengurus" element={<DashboardPengurus />} />
+              {/* Dashboard Routes - Officers (Admin/RW/RT) access dashboard-pengurus */}
+              <Route path="/dashboard" element={(isAdmin || isRW || isRT) ? <DashboardPengurus /> : <Navigate to="/dashboard-warga" replace />} />
+              <Route path="/dashboard-pengurus" element={(isAdmin || isRW || isRT) ? <DashboardPengurus /> : <Navigate to="/dashboard-warga" replace />} />
               <Route path="/dashboard-warga" element={<DashboardWarga />} />
-              <Route path="/houses" element={<Houses />} />
-              <Route path="/residents" element={<Residents />} />
-              <Route path="/payments" element={<Payments />} />
+              
+              {/* Officer CRUD Routes - Admin/RW/RT only */}
+              <Route path="/houses" element={(isAdmin || isRW || isRT) ? <Houses /> : <Navigate to="/dashboard-warga" replace />} />
+              <Route path="/residents" element={(isAdmin || isRW || isRT) ? <Residents /> : <Navigate to="/dashboard-warga" replace />} />
+              <Route path="/payments" element={(isAdmin || isRW || isRT) ? <Payments /> : <Navigate to="/dashboard-warga" replace />} />
+              
+              {/* Public Routes - All logged-in users */}
               <Route path="/aktivitas" element={<Aktivitas />} />
               <Route path="/kegiatan" element={<Kegiatan />} />
               <Route path="/komunitas" element={<Komunitas />} />
-              <Route path="/warga" element={<DashboardWarga />} />
-              <Route path="/warga/organisasi" element={<Komunitas />} />
-              <Route path="/warga/kegiatan" element={<Kegiatan />} />
               <Route path="/warga/aktivitas" element={<Aktivitas />} />
               <Route path="/warga/iuran" element={<Payments />} />
               <Route path="/warga/penghuni" element={<Residents />} />
               <Route path="/warga/rumah" element={<Houses />} />
               {/* Default */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/dashboard-warga" replace />} />
+              <Route path="*" element={isAdmin ? <Navigate to="/dashboard" replace /> : <Navigate to="/dashboard-warga" replace />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

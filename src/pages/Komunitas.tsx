@@ -100,7 +100,7 @@ const Komunitas = () => {
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Komunitas</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Temukan dan bergabunglah dengan komunitas di Graha Harmony 5
+            Temukan dan bergabunglah dengan komunitas di Grand Harmony 5
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>

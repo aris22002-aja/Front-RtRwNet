@@ -50,7 +50,7 @@ const Postingan = () => {
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Postingan</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Kabar dan cerita terbaru warga Graha Harmony 5
+            Kabar dan cerita terbaru warga Grand Harmony 5
           </p>
         </div>
         <button className="btn">

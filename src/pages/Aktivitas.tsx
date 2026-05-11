@@ -159,7 +159,7 @@ const Aktivitas = () => {
       <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Aktivitas</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Log aktivitas terbaru di lingkungan Graha Harmony 5</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Log aktivitas terbaru di lingkungan Grand Harmony 5</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

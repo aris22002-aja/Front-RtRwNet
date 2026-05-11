@@ -53,7 +53,7 @@ const Produk = () => {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Produk Warga</h1>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Jelajahi produk & jualan warga Graha Harmony 5
+          Jelajahi produk & jualan warga Grand Harmony 5
         </p>
       </div>
 

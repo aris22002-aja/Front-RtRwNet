@@ -91,7 +91,7 @@ const Kegiatan = () => {
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Kegiatan</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Daftar kegiatan & acara warga Graha Harmony 5
+            Daftar kegiatan & acara warga Grand Harmony 5
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -108,37 +108,37 @@ const Kegiatan = () => {
             <div>
               <label className="label">Judul Kegiatan</label>
               <input className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+                value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
             </div>
             <div>
               <label className="label">Lokasi</label>
               <input className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
+                value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
             </div>
             <div style={{ gridColumn: 'span 2' }}>
               <label className="label">Deskripsi</label>
               <input className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+                value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
             </div>
             <div>
               <label className="label">Tanggal</label>
               <input type="date" className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+                value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
             </div>
             <div>
               <label className="label">Waktu</label>
               <input type="time" className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
+                value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
             </div>
             <div>
               <label className="label">Peserta (target)</label>
               <input type="number" className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.participants} onChange={e => setForm({...form, participants: +e.target.value})} />
+                value={form.participants} onChange={e => setForm({ ...form, participants: +e.target.value })} />
             </div>
             <div>
               <label className="label">Status</label>
               <select className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
                 <option value="akan datang">Akan Datang</option>
                 <option value="selesai">Selesai</option>
               </select>
@@ -146,7 +146,7 @@ const Kegiatan = () => {
             <div style={{ gridColumn: 'span 2' }}>
               <label className="label">URL Gambar (opsional)</label>
               <input className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={form.image} onChange={e => setForm({...form, image: e.target.value})} />
+                value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} />
             </div>
             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.5rem' }}>
               <button type="submit" className="btn btn-primary">Simpan</button>
@@ -286,8 +286,8 @@ const Kegiatan = () => {
             {filter === 'semua'
               ? 'Belum ada kegiatan yang terdaftar.'
               : filter === 'akan datang'
-              ? 'Tidak ada kegiatan yang akan datang.'
-              : 'Belum ada kegiatan yang selesai.'}
+                ? 'Tidak ada kegiatan yang akan datang.'
+                : 'Belum ada kegiatan yang selesai.'}
           </p>
         </div>
       )}

@@ -1,204 +1,357 @@
 // ============================================================
 // AdminPanel.tsx — User Role Management (Pengurus CRUD)
+// Follows: firebase/SKILL.md + RoleContext pattern
 // ============================================================
 
 import React, { useState, useEffect } from 'react';
-import { useRole, Role, RoleDisplayName } from '../contexts/RoleContext';
+import { useRole, ROLE_DISPLAY_NAMES, PERMISSIONS, Role } from '../contexts/RoleContext';
 import { saveUserProfile, getUserProfile } from '../firebase/config';
-
-const ALL_ROLES = Object.values(Role);
+import { Shield, Users, Save, Search, AlertCircle } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
-  const { user, hasPermission, loading: roleLoading } = useRole();
-  const [users, setUsers] = useState<Array<{ uid: string; email: string; role: Role; roleDisplay: string; name: string }>>([]);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<Role>(Role.WARGANEGARA);
+  const { profile, isAdmin, canUpdate, canDelete, loading } = useRole();
+  const [users, setUsers] = useState<Array<{
+    uid: string;
+    email: string;
+    role: Role;
+    roleDisplay: string;
+    name: string;
+  }>>([]);
+  const [selectedUserUid, setSelectedUserUid] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<Role>('warga');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [searchEmail, setSearchEmail] = useState('');
 
-  // Dynamic admin lookup from Firebase RTDB - queries users with managerial roles
+  // Role options for dropdown
+  const ROLE_OPTIONS: Role[] = [
+    'admin',
+    'kepala_lingkungan',
+    'ketua_rw',
+    'ketua_rt',
+    'rt',
+    'rw',
+    'warga'
+  ];
+
+  // Load users with managerial roles from Firebase RTDB
   useEffect(() => {
     const loadUsersFromRTDB = async () => {
       try {
-        const { getDatabase, ref, get, DataSnapshot } = await import('firebase/database');
+        const { getDatabase, ref, get } = await import('firebase/database');
         const db = getDatabase();
         const usersRef = ref(db, 'users');
         
         const snapshot = await get(usersRef);
         
-        const usersData: Array<{ uid: string; email: string; role: Role; roleDisplay: string; name: string }> = [];
-        snapshot.forEach((child) => {
+        const usersData: Array<{
+          uid: string;
+          email: string;
+          role: Role;
+          roleDisplay: string;
+          name: string;
+        }> = [];
+        
+        snapshot.forEach((child: any) => {
           const data = child.val() || {};
-          const role = data.role as Role;
-          if ([Role.KETUA_RW, Role.KETUA_RT].includes(role)) {
+          const role = (data.role as Role) || 'warga';
+          const roleDisplay = ROLE_DISPLAY_NAMES[role] || 'Warga';
+          
+          // Show users with managerial roles
+          if (['ketua_rw', 'ketua_rt', 'rt', 'rw'].includes(role)) {
             usersData.push({
               uid: child.key as string,
               email: data.email || '',
-              name: data.name || data.email || 'Unknown',
+              name: data.displayName || data.email || 'Unknown',
               role: role,
-              roleDisplay: data.roleDisplay || RoleDisplayName[role] || 'Warga',
+              roleDisplay: roleDisplay,
             });
           }
         });
+        
         setUsers(usersData);
       } catch (err) {
-        console.error('Failed to load users from RTDB:', err);
+        console.error('[AdminPanel] Load users error:', err);
         setUsers([]);
       }
     };
+    
     loadUsersFromRTDB();
   }, []);
 
-  const handleSaveRole = async () => {
-    if (!selectedUser || !user) return;
-
+  // Save role update to Firebase RTDB
+  const handleUpdateRole = async () => {
+    if (!selectedUserUid || !selectedRole) return;
+    
     setSaveStatus('saving');
     try {
-      await saveUserProfile(selectedUser, {
+      await saveUserProfile(selectedUserUid, {
         role: selectedRole,
-        roleDisplay: RoleDisplayName[selectedRole],
-        updatedBy: user.uid,
+        roleDisplay: ROLE_DISPLAY_NAMES[selectedRole],
         updatedAt: new Date().toISOString(),
+        updatedBy: profile?.uid,
       });
-
-      // Update local state
-      setUsers(prev => prev.map(u =>
-        u.uid === selectedUser
-          ? { ...u, role: selectedRole, roleDisplay: RoleDisplayName[selectedRole] }
-          : u
-      ));
-
+      
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch (error) {
-      console.error('Failed to save role:', error);
+    } catch (err) {
+      console.error('[AdminPanel] Update role error:', err);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
-  const handleUserSelect = (uid: string) => {
-    setSelectedUser(uid);
-    const selected = users.find(u => u.uid === uid);
-    if (selected) setSelectedRole(selected.role);
-  };
+  // Filter users by search
+  const filteredUsers = users.filter(u => 
+    u.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
+    u.name.toLowerCase().includes(searchEmail.toLowerCase())
+  );
 
-  if (roleLoading) return <div className="p-4">Loading...</div>;
-
-  // Check permission - hanya SUPER_ADMIN, KETUA_RW, KETUA_RT yang bisa akses
-  if (!hasPermission?.('users') && user?.role !== Role.SUPER_ADMIN && user?.role !== Role.KETUA_RW && user?.role !== Role.KETUA_RT) {
+  // Check permissions
+  if (loading) {
     return (
-      <div className="p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <h2 className="font-bold text-lg mb-2">Akses Ditolak</h2>
-          <p>Hanya pengurus (Ketua RW/RT) yang dapat mengakses halaman ini.</p>
-          <p className="text-sm mt-2">Role Anda: <span className="font-semibold">{user?.role ? RoleDisplayName[user.role] : 'Tidak diketahui'}</span></p>
-        </div>
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        Memuat...
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626' }}>
+        <AlertCircle size={48} style={{ marginBottom: '1rem' }} />
+        <p>Anda tidak memiliki akses ke panel ini.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Panel Admin</h1>
-        <p className="text-gray-600 mb-6">Kelola role pengguna aplikasi Rt-Rw-Net</p>
-
-        {/* User List */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Daftar User</h2>
-          <div className="space-y-3">
-            {users.map((u) => (
-              <div
-                key={u.uid}
-                onClick={() => handleUserSelect(u.uid)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedUser === u.uid
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-blue-300'
-                  }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-800">{u.name}</p>
-                    <p className="text-sm text-gray-500">{u.email}</p>
-                    <p className="text-xs text-gray-400 mt-1">UID: {u.uid}</p>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${u.role !== Role.WARGANEGARA
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-600'
-                    }`}>
-                    {u.roleDisplay}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Role Editor */}
-        {selectedUser && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">Edit Role</h2>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Pilih Role:</label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as Role)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {ALL_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {RoleDisplayName[role]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={handleSaveRole}
-              disabled={saveStatus === 'saving'}
-              className={`w-full py-3 rounded-lg font-medium transition-colors ${saveStatus === 'saving'
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-            >
-              {saveStatus === 'saving' ? 'Menyimpan...' : 'Simpan Role'}
-            </button>
-
-            {saveStatus === 'success' && (
-              <p className="mt-3 text-green-600 font-medium">✓ Role berhasil diupdate!</p>
-            )}
-            {saveStatus === 'error' && (
-              <p className="mt-3 text-red-600 font-medium">✗ Gagal menyimpan role</p>
-            )}
-          </div>
-        )}
-
-        {/* Role Legend */}
-        <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">Keterangan Role</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <h3 className="font-medium text-green-700 mb-2">Pengurus (Bisa CRUD):</h3>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Super Admin</li>
-                <li>• Ketua RW</li>
-                <li>• Ketua RT</li>
-                <li>• Sekretaris</li>
-                <li>• Bendahara</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700 mb-2">Warga (Hanya Baca):</h3>
-              <ul className="space-y-1 text-gray-600">
-                <li>• Warga</li>
-                <li>• Karang Taruna</li>
-              </ul>
-            </div>
-          </div>
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '12px',
+        marginBottom: '2rem'
+      }}>
+        <Shield size={32} style={{ color: '#667eea' }} />
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Panel Admin</h1>
+          <p style={{ margin: 0, color: '#6b7280' }}>
+            Kelola peran pengguna ({ROLE_DISPLAY_NAMES[profile?.role as Role] || 'Admin'})
+          </p>
         </div>
       </div>
+
+      {/* Search */}
+      <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
+        <Search 
+          size={18} 
+          style={{ 
+            position: 'absolute', 
+            left: '12px', 
+            top: '50%', 
+            transform: 'translateY(-50%)',
+            color: '#9ca3af'
+          }} 
+        />
+        <input
+          type="text"
+          placeholder="Cari email atau nama..."
+          value={searchEmail}
+          onChange={(e) => setSearchEmail(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '12px 12px 12px 42px',
+            border: '2px solid #e5e7eb',
+            borderRadius: '10px',
+            fontSize: '0.95rem',
+          }}
+        />
+      </div>
+
+      {/* User List */}
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '16px', 
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden'
+      }}>
+        <div style={{ 
+          padding: '1rem 1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f9fafb',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <Users size={20} style={{ color: '#667eea' }} />
+          <span style={{ fontWeight: '600' }}>Daftar Pengguna</span>
+          <span style={{ 
+            background: '#667eea', 
+            color: 'white', 
+            padding: '2px 8px', 
+            borderRadius: '12px',
+            fontSize: '0.75rem'
+          }}>
+            {filteredUsers.length}
+          </span>
+        </div>
+
+        <div style={{ maxHeight: '400px', overflow: 'auto' }}>
+          {filteredUsers.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+              {searchEmail ? 'Tidak ada hasil' : 'Tidak ada data'}
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb' }}>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.75rem', color: '#6b7280' }}>
+                    NAMA
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.75rem', color: '#6b7280' }}>
+                    EMAIL
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.75rem', color: '#6b7280' }}>
+                    PERAN
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.75rem', color: '#6b7280' }}>
+                    AKSI
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => (
+                  <tr 
+                    key={user.uid}
+                    style={{ 
+                      borderBottom: '1px solid #e5e7eb',
+                      background: selectedUserUid === user.uid ? '#f0f9ff' : 'transparent'
+                    }}
+                    onClick={() => {
+                      setSelectedUserUid(user.uid);
+                      setSelectedRole(user.role);
+                    }}
+                  >
+                    <td style={{ padding: '12px 16px' }}>{user.name}</td>
+                    <td style={{ padding: '12px 16px', color: '#6b7280' }}>{user.email}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{
+                        background: '#ecfdf5',
+                        color: '#059669',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        {user.roleDisplay}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUserUid(user.uid);
+                          setSelectedRole(user.role);
+                        }}
+                        style={{
+                          background: '#667eea',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        Ubah
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Edit Modal */}
+      {selectedUserUid && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          background: 'white',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          padding: '1.5rem',
+          width: '320px',
+          zIndex: 100
+        }}>
+          <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Ubah Peran</h3>
+          
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value as Role)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              border: '2px solid #e5e7eb',
+              borderRadius: '10px',
+              fontSize: '0.95rem',
+              marginBottom: '1rem'
+            }}
+          >
+            {ROLE_OPTIONS.map((role) => (
+              <option key={role} value={role}>
+                {ROLE_DISPLAY_NAMES[role]}
+              </option>
+            ))}
+          </select>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={handleUpdateRole}
+              disabled={saveStatus === 'saving'}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '12px',
+                background: saveStatus === 'success' ? '#059669' : '#667eea',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              <Save size={18} />
+              {saveStatus === 'saving' ? 'Menyimpan...' : saveStatus === 'success' ? 'Tersimpan!' : 'Simpan'}
+            </button>
+            <button
+              onClick={() => setSelectedUserUid('')}
+              style={{
+                padding: '12px 16px',
+                background: '#f3f4f6',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              Batal
+            </button>
+          </div>
+
+          {saveStatus === 'error' && (
+            <p style={{ color: '#dc2626', marginTop: '0.5rem', fontSize: '0.875rem' }}>
+              Gagal menyimpan. Coba lagi.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

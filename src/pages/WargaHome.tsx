@@ -84,7 +84,7 @@ const WargaHome = () => {
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: 700 }}>Beranda Warga</h1>
         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Selamat datang kembali, Warga Graha Harmony 5 👋
+          Selamat datang kembali, Warga  Harmony 5 👋
         </p>
       </div>
 

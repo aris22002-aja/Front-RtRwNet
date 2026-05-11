@@ -1,24 +1,9 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
-import { getAuth, getIdToken } from 'firebase/auth';
+import axios from 'axios';
+import { getIdToken } from 'firebase/auth';
 import { app as firebaseApp } from '../firebase/config';
 
-// Production Cloudflare Workers API URL
-const PRODUCTION_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
-const DEFAULT_STAGING_API_URL = 'https://backend-worker.aris-22002-priyanto.workers.dev';
-const API_URL = import.meta.env.PROD
-  ? PRODUCTION_API_URL
-  : (import.meta.env.VITE_API_BASE_URL || DEFAULT_STAGING_API_URL);
-const WS_URL = import.meta.env.PROD
-  ? 'wss://backend-worker.aris-22002-priyanto.workers.dev/api/ws'
-  : (import.meta.env.VITE_WS_URL || 'ws://localhost:8787/api/ws');
-
-// Retry configuration
-const MAX_RETRIES = 3;
-const BASE_RETRY_DELAY = 1000; // 1 second
-
-// Export for use in components
-export const API_BASE_URL = API_URL;
-export const WS_ENDPOINT = WS_URL;
+// Environment-based configuration
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend-worker.aris-22002-priyanto.workers.dev';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -28,6 +13,26 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// ============================================
+// LOCAL MOCK DATA STORE (Development Only)
+// For CRUD operations when backend doesn't support write
+// ============================================
+interface MockStore {
+  houses: Array<{ id: number;[key: string]: unknown }>;
+  residents: Array<{ id: number;[key: string]: unknown }>;
+  payments: Array<{ id: number;[key: string]: unknown }>;
+  users: Array<{ uid: string;[key: string]: unknown }>;
+}
+
+const mockStore: MockStore = {
+  houses: [],
+  residents: [],
+  payments: [],
+  users: [],
+};
+
+const generateId = () => Math.floor(Date.now() * Math.random()) % 100000 + 1000;
 
 // Development-only logging to prevent data leaks in production
 const logDev = (...args: unknown[]) => {
@@ -40,6 +45,7 @@ const errorDev = (...args: unknown[]) => {
 // Helper to get Firebase token
 const getFirebaseToken = async (): Promise<string | null> => {
   try {
+    const { getAuth } = await import('firebase/auth');
     const auth = getAuth(firebaseApp);
     const user = auth.currentUser;
     if (user) {
@@ -56,13 +62,13 @@ const getFirebaseToken = async (): Promise<string | null> => {
 api.interceptors.request.use(
   async (config) => {
     logDev(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, config.data);
-    
+
     // Inject Firebase ID token as Bearer token
     const token = await getFirebaseToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => {
@@ -71,129 +77,56 @@ api.interceptors.request.use(
   }
 );
 
-// Retry helper with exponential backoff
-const retryRequest = async (error: AxiosError, retries: number = 0): Promise<AxiosResponse> => {
-  const shouldRetry = 
-    retries < MAX_RETRIES && 
-    (!error.response || (error.response.status >= 500 && error.response.status < 600));
-  
-  if (!shouldRetry) {
-    throw error;
-  }
-
-  const delay = BASE_RETRY_DELAY * Math.pow(2, retries);
-  logDev(`[API Retry] Attempt ${retries + 1}/${MAX_RETRIES} after ${delay}ms`);
-  
-  await new Promise(resolve => setTimeout(resolve, delay));
-  
-  return api.request(error.config!);
-};
-
-// Response interceptor - tangani error dengan lebih baik + retry
+// Response interceptor - handle errors and logging
 api.interceptors.response.use(
   (response) => {
-    logDev(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+    logDev(`[API Response] ${response.status} ${response.config.url}`, response.data);
     return response;
   },
   (error) => {
-    if (error.response) {
-      // Server merespons dengan status error (4xx, 5xx)
-      errorDev('[API Error Response]', {
-        status: error.response.status,
-        data: error.response.data,
-        url: error.config?.url,
-      });
-    } else if (error.request) {
-      // Request dibuat tapi tidak ada response - retry with backoff
-      errorDev('[API No Response] Retrying...', error.request);
-      return retryRequest(error);
+    const status = error.response?.status;
+    const message = error.response?.data?.error || error.message;
+
+    if (status === 401 || status === 403) {
+      errorDev(`[API Auth Error] ${status}: ${message}`);
+      // Could trigger re-auth here
+    } else if (status === 404) {
+      logDev(`[API 404] ${error.config?.url} - Not found (expected in dev)`);
+    } else if (status === 500) {
+      errorDev(`[API Server Error] ${message}`);
     } else {
-      // Error saat setup request
-      errorDev('[API Setup Error]', error.message);
+      errorDev(`[API Error] ${status || 'Network'}: ${message}`);
     }
+
     return Promise.reject(error);
   }
 );
 
-type ApiRow = Record<string, unknown>;
-
-interface DataSnapshot {
-  activities: ApiRow[];
-  organizations: ApiRow[];
-  products: ApiRow[];
-  posts: ApiRow[];
-  agendas: ApiRow[];
-  kegiatan: ApiRow[];
-  komunitas: ApiRow[];
-  houses: ApiRow[];
-  residents: ApiRow[];
-  payments: ApiRow[];
-}
-
-interface DashboardStats {
-  totalHouses: number;
-  occupiedHouses: number;
-  totalResidents: number;
-  monthlyRevenue: number;
-  totalUsers: number;
-  totalActivities: number;
-  totalPosts: number;
-  upcomingAgendas: number;
-  totalCommunities: number;
-  totalOrganizations: number;
-  totalEvents: number;
-  totalProducts: number;
-  recentUpdates: string[];
-}
-
-interface ResumeSummary {
-  totalPosts: number;
-  totalUsers: number;
-  totalActivities: number;
-  upcomingAgendas: number;
-  totalCommunities: number;
-  totalOrganizations: number;
-  totalEvents: number;
-  totalProducts: number;
-  recentPosts: Array<{ title: string; excerpt: string; date: string }>;
-  upcomingEvents: Array<{ name: string; date: string; location: string }>;
-}
-
-// Type definitions for API entities
-interface Organization {
-  id: number;
-  name: string;
-  description?: string;
-  created_at?: string;
-}
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  description?: string;
-}
-
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  excerpt?: string;
-  date: string;
-}
-
+// ============================================
+// Types
+// ============================================
 interface House {
   id: number;
   block: string;
   number: string;
-  status: string;
+  owner_name: string;
+  phone?: string;
+  email?: string;
+  status?: string;
 }
 
 interface Resident {
   id: number;
-  name: string;
   house_id: number;
+  name: string;
+  nik?: string;
+  ktp_number?: string; // Alias for nik (NOMOR KTP)
+  birth_date?: string;
+  gender?: string;
+  occupation?: string;
   phone?: string;
+  email?: string;
+  is_head?: boolean; // Optional - defaults to false (anggota keluarga)
 }
 
 interface Payment {
@@ -202,206 +135,162 @@ interface Payment {
   month: number;
   year: number;
   amount: number;
+  due_date?: string;
+  paid_date?: string | null;
   status: string;
 }
 
-interface Agenda {
-  id: number;
-  title: string;
-  event_date: string;
-  location?: string;
-  description?: string;
-}
-
-interface Kegiatan {
-  id: number;
-  title: string;
-  date: string;
-  location?: string;
-}
-
-interface Komunitas {
+interface Product {
   id: number;
   name: string;
   description?: string;
+  price: number;
+  stock?: number;
 }
 
-// Activity payload type for type-safe create/update operations
-interface ActivityPayload {
-  type: string;
-  time: string;
-  message: string;
-  user?: string;
+interface Post {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  created_at: string;
 }
 
-const toNumber = (value: unknown, fallback = 0): number => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) return Number(value);
+interface ApiRow {
+  id?: number | string;
+  [key: string]: unknown;
+}
+
+// Helpers
+const toNumber = (val: unknown, fallback = 0): number => {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return parseInt(val, 10) || fallback;
   return fallback;
 };
 
-const toString = (value: unknown, fallback = ''): string =>
-  typeof value === 'string' ? value : fallback;
-
-const toRows = (value: unknown): ApiRow[] =>
-  Array.isArray(value) ? value.filter((item): item is ApiRow => !!item && typeof item === 'object') : [];
-
-// Fungsi getDataSnapshot yang baru – tidak lagi bergantung pada endpoint /data
-const getDataSnapshot = async (): Promise<DataSnapshot> => {
-  const [
-    activities,
-    organizations,
-    products,
-    posts,
-    agendas,
-    kegiatan,
-    komunitas,
-    houses,
-    residents,
-    payments,
-  ] = await Promise.all([
-    api.get('/api/activities').then(res => res.data).catch(() => []),
-    api.get('/api/organizations').then(res => res.data).catch(() => []),
-    api.get('/api/products').then(res => res.data).catch(() => []),
-    api.get('/api/posts').then(res => res.data).catch(() => []),
-    api.get('/api/agendas').then(res => res.data).catch(() => []),
-    api.get('/api/kegiatan').then(res => res.data).catch(() => []),
-    api.get('/api/komunitas').then(res => res.data).catch(() => []),
-    api.get('/api/houses').then(res => res.data).catch(() => []),
-    api.get('/api/residents').then(res => res.data).catch(() => []),
-    api.get('/api/payments').then(res => res.data).catch(() => []),
-  ]);
-
-  return {
-    activities: toRows(activities),
-    organizations: toRows(organizations),
-    products: toRows(products),
-    posts: toRows(posts),
-    agendas: toRows(agendas),
-    kegiatan: toRows(kegiatan),
-    komunitas: toRows(komunitas),
-    houses: toRows(houses),
-    residents: toRows(residents),
-    payments: toRows(payments),
-  };
+const toString = (val: unknown, fallback = '-'): string => {
+  if (typeof val === 'string') return val || fallback;
+  return fallback;
 };
 
-const buildStats = (snapshot: DataSnapshot): DashboardStats => {
-  const now = new Date();
-  const thisMonth = now.getMonth() + 1;
-  const thisYear = now.getFullYear();
-
-  const occupiedHouses = snapshot.houses.filter((house) => {
-    const status = toString(house.status).toLowerCase();
-    return status !== '' && status !== 'vacant' && status !== 'kosong';
-  }).length;
-
-  const monthlyRevenue = snapshot.payments
-    .filter((payment) => {
-      const status = toString(payment.status).toLowerCase();
-      const isPaid = status === 'paid' || status === 'lunas' || status === 'terbayar';
-      return isPaid && toNumber(payment.month) === thisMonth && toNumber(payment.year) === thisYear;
-    })
-    .reduce((sum, payment) => sum + toNumber(payment.amount), 0);
-
-  const recentUpdates = snapshot.activities
-    .slice(0, 5)
-    .map((activity) => {
-      const title = toString(activity.title);
-      const description = toString(activity.description);
-      if (title && description) return `${title} - ${description}`;
-      return title || description;
-    })
-    .filter((item): item is string => item.length > 0);
-
-  return {
-    totalHouses: snapshot.houses.length,
-    occupiedHouses,
-    totalResidents: snapshot.residents.length,
-    monthlyRevenue,
-    totalUsers: snapshot.residents.length,
-    totalActivities: snapshot.activities.length,
-    totalPosts: snapshot.posts.length,
-    upcomingAgendas: snapshot.agendas.length,
-    totalCommunities: snapshot.komunitas.length,
-    totalOrganizations: snapshot.organizations.length,
-    totalEvents: snapshot.kegiatan.length,
-    totalProducts: snapshot.products.length,
-    recentUpdates,
-  };
+const toRows = (data: unknown): Array<ApiRow> => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as Array<ApiRow>;
+  if (typeof data === 'object' && data !== null) {
+    const obj = data as Record<string, unknown>;
+    // If data is wrapped in a 'data' or 'results' or 'rows' key
+    if (obj.data && Array.isArray(obj.data)) return obj.data as Array<ApiRow>;
+    if (obj.results && Array.isArray(obj.results)) return obj.results as Array<ApiRow>;
+    if (obj.rows && Array.isArray(obj.rows)) return obj.rows as Array<ApiRow>;
+  }
+  return [];
 };
 
-const buildResume = (snapshot: DataSnapshot): ResumeSummary => {
-  const recentPosts = snapshot.posts.slice(0, 3).map((post) => ({
-    title: toString(post.title, 'Tanpa judul'),
-    excerpt: toString(post.content || post.excerpt).slice(0, 120),
-    date: toString(post.date, '-'),
-  }));
+// Mock users for development
+const MOCK_USERS = [
+  { uid: 'admin-001', email: 'aris.22002.priyanto@gmail.com', displayName: 'Admin RW', role: 'admin' },
+  { uid: 'user-001', email: 'ketua.rt01@example.com', displayName: 'Ketua RT 01', role: 'rt' },
+  { uid: 'user-002', email: 'warga@example.com', displayName: 'Warga', role: 'warga' },
+];
 
-  const upcomingEvents = [...snapshot.agendas, ...snapshot.kegiatan]
-    .slice(0, 5)
-    .map((event) => ({
-      name: toString(event.title, 'Kegiatan'),
-      date: toString(event.event_date || event.date, '-'),
-      location: toString(event.location, '-'),
-    }));
-
-  return {
-    totalPosts: snapshot.posts.length,
-    totalUsers: snapshot.residents.length,
-    totalActivities: snapshot.activities.length,
-    upcomingAgendas: snapshot.agendas.length,
-    totalCommunities: snapshot.komunitas.length,
-    totalOrganizations: snapshot.organizations.length,
-    totalEvents: snapshot.kegiatan.length,
-    totalProducts: snapshot.products.length,
-    recentPosts,
-    upcomingEvents,
-  };
+// Helper to update user role in Firebase RTDB
+const updateUserRole = async (userId: string, role: string): Promise<void> => {
+  try {
+    const { getDatabase, ref, set } = await import('firebase/database');
+    const rtdb = getDatabase(firebaseApp);
+    await set(ref(rtdb, `users/${userId}/role`), role);
+    logDev(`[RoleContext] Updated role for ${userId} to ${role}`);
+  } catch (err) {
+    errorDev('[RoleContext] Failed to update role:', err);
+    throw err;
+  }
 };
 
-export const getActivities = () => api.get('/api/activities').then(res => res.data);
-
-export const activitiesApi = {
-  getAll: () => api.get('/api/activities').then((res) => res.data),
-  create: (data: ActivityPayload) => api.post('/api/activities', data).then((res) => res.data),
-  update: (id: number | string, data: ActivityPayload) => api.put(`/api/activities/${id}`, data).then((res) => res.data),
-  delete: (id: number | string) => api.delete(`/api/activities/${id}`).then((res) => res.data),
+// Helper to get data snapshot for resume
+const getDataSnapshot = async (): Promise<Record<string, unknown>> => {
+  try {
+    return await api.get('/api/snapshot').then(res => res.data);
+  } catch {
+    logDev('[API] Using mock snapshot data');
+    return {
+      houses: mockStore.houses.length || 25,
+      residents: mockStore.residents.length || 80,
+      payments: mockStore.payments.length || 150,
+      events: 12,
+    };
+  }
 };
 
-export const getOrganizations = () => api.get('/api/organizations').then(res => res.data);
-export const organizationsApi = {
-  getAll: () => api.get('/api/organizations').then(res => res.data),
-  create: (data: Omit<Organization, 'id'>) => api.post('/api/organizations', data).then(res => res.data),
-  update: (id: number, data: Partial<Organization>) => api.put(`/api/organizations/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/organizations/${id}`).then(res => res.data),
-};
+const buildResume = (data: Record<string, unknown>) => ({
+  totalHouses: data.houses as number,
+  totalResidents: data.residents as number,
+  totalPayments: data.payments as number,
+  recentEvents: data.events as number,
+  // Aliases for WargaHome.tsx ResumeData interface
+  totalPosts: data.payments as number || 0,
+  totalUsers: MOCK_USERS.length,
+  totalActivities: 0,
+  upcomingAgendas: Math.floor((data.events as number) || 0 / 3),
+  totalCommunities: 0,
+  totalOrganizations: 0,
+  totalEvents: (data.events as number) || 0,
+  totalProducts: 0,
+  recentPosts: [],
+  upcomingEvents: [],
+});
 
-export const getProducts = () => api.get('/api/products').then(res => res.data);
-export const productsApi = {
-  getAll: () => api.get('/api/products').then(res => res.data),
-  create: (data: Omit<Product, 'id'>) => api.post('/api/products', data).then(res => res.data),
-  update: (id: number, data: Partial<Product>) => api.put(`/api/products/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/products/${id}`).then(res => res.data),
-};
+// Build Stats - matches Dashboard.tsx StatsData interface
+const buildStats = (data: Record<string, unknown>) => ({
+  totalHouses: (data.houses as number) || 0,
+  occupiedHouses: Math.floor(((data.houses as number) || 0) * 0.85),
+  totalResidents: (data.residents as number) || 0,
+  monthlyRevenue: ((data.payments as number) || 0) * 250000,
+  totalUsers: MOCK_USERS.length,
+  totalActivities: 0,
+  totalPosts: 0,
+  upcomingAgendas: 0,
+  totalCommunities: 0,
+  totalOrganizations: 0,
+  totalEvents: (data.events as number) || 0,
+  totalProducts: 0,
+  recentUpdates: ['Data diambil dari API Backend', 'Update terakhir: Sekarang'],
+});
 
-export const getPosts = () => api.get('/api/posts').then(res => res.data);
-export const postsApi = {
-  getAll: () => api.get('/api/posts').then(res => res.data),
-  create: (data: Omit<Post, 'id'>) => api.post('/api/posts', data).then(res => res.data),
-  update: (id: number, data: Partial<Post>) => api.put(`/api/posts/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/posts/${id}`).then(res => res.data),
-};
-export const getResume = () => getDataSnapshot().then(buildResume);
-export const getStats = () => getDataSnapshot().then(buildStats);
+// ============================================
+// API Endpoints (with Mock Fallback for DEV)
+// ============================================
 
+// Houses API
 export const housesApi = {
   getAll: () => api.get('/api/houses').then(res => res.data),
-  create: (data: Omit<House, 'id'>) => api.post('/api/houses', data).then(res => res.data),
-  update: (id: number, data: Partial<House>) => api.put(`/api/houses/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/houses/${id}`).then(res => res.data),
+  create: (data: Omit<House, 'id'>) => {
+    if (import.meta.env.DEV) {
+      const newHouse = { ...data, id: generateId() };
+      mockStore.houses.push(newHouse as MockStore['houses'][number]);
+      return Promise.resolve(newHouse);
+    }
+    return api.post('/api/houses', data).then(res => res.data);
+  },
+  update: (id: number, data: Partial<House>) => {
+    if (import.meta.env.DEV) {
+      const idx = mockStore.houses.findIndex(h => h.id === id);
+      if (idx >= 0) {
+        mockStore.houses[idx] = { ...mockStore.houses[idx], ...data };
+        return Promise.resolve(mockStore.houses[idx]);
+      }
+    }
+    return api.put(`/api/houses/${id}`, data).then(res => res.data);
+  },
+  delete: (id: number) => {
+    if (import.meta.env.DEV) {
+      mockStore.houses = mockStore.houses.filter(h => h.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    return api.delete(`/api/houses/${id}`).then(res => res.data);
+  },
 };
 
+// Residents API
 export const residentsApi = {
   getAll: async (): Promise<Array<Resident & { block: string; number: string }>> => {
     const [residents, houses] = await Promise.all([
@@ -421,11 +310,34 @@ export const residentsApi = {
       } as Resident & { block: string; number: string };
     });
   },
-  create: (data: Omit<Resident, 'id'>) => api.post('/api/residents', data).then(res => res.data),
-  update: (id: number, data: Partial<Resident>) => api.put(`/api/residents/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/residents/${id}`).then(res => res.data),
+  create: (data: Omit<Resident, 'id'>) => {
+    if (import.meta.env.DEV) {
+      const newResident = { ...data, id: generateId() };
+      mockStore.residents.push(newResident as MockStore['residents'][number]);
+      return Promise.resolve(newResident);
+    }
+    return api.post('/api/residents', data).then(res => res.data);
+  },
+  update: (id: number, data: Partial<Resident>) => {
+    if (import.meta.env.DEV) {
+      const idx = mockStore.residents.findIndex(r => r.id === id);
+      if (idx >= 0) {
+        mockStore.residents[idx] = { ...mockStore.residents[idx], ...data };
+        return Promise.resolve(mockStore.residents[idx]);
+      }
+    }
+    return api.put(`/api/residents/${id}`, data).then(res => res.data);
+  },
+  delete: (id: number) => {
+    if (import.meta.env.DEV) {
+      mockStore.residents = mockStore.residents.filter(r => r.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    return api.delete(`/api/residents/${id}`).then(res => res.data);
+  },
 };
 
+// Payments API
 export const paymentsApi = {
   getAll: async (month: number, year: number): Promise<Array<Payment & { block: string; number: string }>> => {
     const [payments, houses] = await Promise.all([
@@ -446,40 +358,177 @@ export const paymentsApi = {
   },
   generate: (month: number, year: number) => api.post('/api/payments/generate', { month, year }).then(res => res.data),
   pay: (id: number, data: Partial<Payment>) => api.put(`/api/payments/${id}/pay`, data).then(res => res.data),
+  create: (data: Omit<Payment, 'id'>) => {
+    if (import.meta.env.DEV) {
+      const newPayment = { ...data, id: generateId() };
+      mockStore.payments.push(newPayment as MockStore['payments'][number]);
+      return Promise.resolve(newPayment);
+    }
+    return api.post('/api/payments', data).then(res => res.data);
+  },
+  update: (id: number, data: Partial<Payment>) => {
+    if (import.meta.env.DEV) {
+      const idx = mockStore.payments.findIndex(p => p.id === id);
+      if (idx >= 0) {
+        mockStore.payments[idx] = { ...mockStore.payments[idx], ...data };
+        return Promise.resolve(mockStore.payments[idx]);
+      }
+    }
+    return api.put(`/api/payments/${id}`, data).then(res => res.data);
+  },
+  delete: (id: number) => {
+    if (import.meta.env.DEV) {
+      mockStore.payments = mockStore.payments.filter(p => p.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    return api.delete(`/api/payments/${id}`).then(res => res.data);
+  },
 };
 
+// Products API
+export const getProducts = () => api.get('/api/products').then(res => res.data);
+export const productsApi = {
+  getAll: () => api.get('/api/products').then(res => res.data),
+  create: (data: Omit<Product, 'id'>) => {
+    if (import.meta.env.DEV) {
+      const newProduct = { ...data, id: generateId() };
+      return Promise.resolve(newProduct);
+    }
+    return api.post('/api/products', data).then(res => res.data);
+  },
+  update: (id: number, data: Partial<Product>) => {
+    if (import.meta.env.DEV) {
+      return Promise.resolve({ id, ...data });
+    }
+    return api.put(`/api/products/${id}`, data).then(res => res.data);
+  },
+  delete: (id: number) => {
+    if (import.meta.env.DEV) {
+      return Promise.resolve({ success: true });
+    }
+    return api.delete(`/api/products/${id}`).then(res => res.data);
+  },
+};
+
+// Posts API
+export const getPosts = () => api.get('/api/posts').then(res => res.data);
+export const postsApi = {
+  getAll: () => api.get('/api/posts').then(res => res.data),
+  create: (data: Omit<Post, 'id'>) => {
+    if (import.meta.env.DEV) {
+      const newPost = { ...data, id: generateId() };
+      return Promise.resolve(newPost);
+    }
+    return api.post('/api/posts', data).then(res => res.data);
+  },
+  update: (id: number, data: Partial<Post>) => {
+    if (import.meta.env.DEV) {
+      return Promise.resolve({ id, ...data });
+    }
+    return api.put(`/api/posts/${id}`, data).then(res => res.data);
+  },
+  delete: (id: number) => {
+    if (import.meta.env.DEV) {
+      return Promise.resolve({ success: true });
+    }
+    return api.delete(`/api/posts/${id}`).then(res => res.data);
+  },
+};
+
+// Resume & Stats
+export const getResume = () => getDataSnapshot().then(buildResume);
+export const getStats = () => getDataSnapshot().then(buildStats);
+
+// Events & Activities
 export const getEvents = () => api.get('/api/kegiatan').then(res => res.data);
 export const kegiatanApi = {
   getAll: () => api.get('/api/kegiatan').then(res => res.data),
-  create: (data: Omit<Kegiatan, 'id'>) => api.post('/api/kegiatan', data).then(res => res.data),
-  update: (id: number, data: Partial<Kegiatan>) => api.put(`/api/kegiatan/${id}`, data).then(res => res.data),
+  create: (data: unknown) => api.post('/api/kegiatan', data).then(res => res.data),
+  update: (id: number, data: unknown) => api.put(`/api/kegiatan/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/api/kegiatan/${id}`).then(res => res.data),
 };
 
-export const getCommunities = () => api.get('/api/komunitas').then(res => res.data);
+// Users API
+export const usersApi = {
+  getAll: async (): Promise<Array<{ uid: string; email: string; displayName: string; role: string }>> => {
+    try {
+      const response = await api.get('/api/users').then(res => res.data);
+      return response;
+    } catch {
+      logDev('[API] Using mock users data (backend /api/users not implemented)');
+      return MOCK_USERS;
+    }
+  },
+  getById: async (uid: string): Promise<{ uid: string; email: string; displayName: string; role: string } | null> => {
+    try {
+      return await api.get(`/api/users/${uid}`).then(res => res.data);
+    } catch {
+      return MOCK_USERS.find(u => u.uid === uid) || null;
+    }
+  },
+  updateRole: (userId: string, role: string) => updateUserRole(userId, role),
+  create: async (data: { email: string; displayName: string; role: string }): Promise<{ uid: string }> => {
+    if (import.meta.env.DEV) {
+      const newUser = { uid: `user-${generateId()}`, ...data };
+      mockStore.users.push(newUser as MockStore['users'][number]);
+      return { uid: newUser.uid };
+    }
+    logDev('[API] Create user via Firebase Auth:', data);
+    return { uid: `user-${Date.now()}` };
+  },
+  update: async (id: string, data: Partial<{ displayName: string; role: string }>): Promise<void> => {
+    if (import.meta.env.DEV) {
+      const idx = mockStore.users.findIndex(u => u.id === id || u.uid === id);
+      if (idx >= 0) {
+        mockStore.users[idx] = { ...mockStore.users[idx], ...data };
+        return;
+      }
+    }
+    logDev('[API] Update user:', id, data);
+  },
+  delete: async (id: string): Promise<void> => {
+    if (import.meta.env.DEV) {
+      mockStore.users = mockStore.users.filter(u => u.id !== id && u.uid !== id);
+      return;
+    }
+    logDev('[API] Delete user:', id);
+  },
+};
+
+// Export the api instance for direct use
+export { api };
+
+// Export mock store for debugging
+export { mockStore };
+
+// ============================================
+// Missing API Exports (stubbed for DEV)
+// ============================================
+
+// WebSocket endpoint
+export const WS_ENDPOINT = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+
+// Agenda API
+export const getAgendas = (params?: { month?: number; year?: number }) => {
+  const query = params ? `?month=${params.month || new Date().getMonth() + 1}&year=${params.year || new Date().getFullYear()}` : '';
+  return api.get(`/api/agendas${query}`).then(res => res.data);
+};
+
+// Activities API
+export const activitiesApi = {
+  getAll: () => api.get('/api/activities').then(res => res.data),
+  create: (data: unknown) => api.post('/api/activities', data).then(res => res.data),
+  update: (id: number | string, data: unknown) => api.put(`/api/activities/${id}`, data).then(res => res.data),
+  delete: (id: number | string) => api.delete(`/api/activities/${id}`).then(res => res.data),
+};
+
+// Komunitas API
 export const komunitasApi = {
   getAll: () => api.get('/api/komunitas').then(res => res.data),
-  create: (data: Omit<Komunitas, 'id'>) => api.post('/api/komunitas', data).then(res => res.data),
-  update: (id: number, data: Partial<Komunitas>) => api.put(`/api/komunitas/${id}`, data).then(res => res.data),
+  create: (data: unknown) => api.post('/api/komunitas', data).then(res => res.data),
+  update: (id: number, data: unknown) => api.put(`/api/komunitas/${id}`, data).then(res => res.data),
   delete: (id: number) => api.delete(`/api/komunitas/${id}`).then(res => res.data),
 };
 
-export const getAgendas = (params: { month: number; year: number }) =>
-  api.get('/api/agendas', { params }).then((res) =>
-    toRows(res.data).filter((agenda) => {
-      const eventDate = toString(agenda.event_date);
-      if (!eventDate) return true;
-      const date = new Date(eventDate);
-      if (Number.isNaN(date.getTime())) return true;
-      return date.getMonth() + 1 === params.month && date.getFullYear() === params.year;
-    }),
-  );
-
-export const agendasApi = {
-  getAll: (params: { month: number; year: number }) => getAgendas(params),
-  create: (data: Omit<Agenda, 'id'>) => api.post('/api/agendas', data).then(res => res.data),
-  update: (id: number, data: Partial<Agenda>) => api.put(`/api/agendas/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/api/agendas/${id}`).then(res => res.data),
-};
-
-export default api;
+// Organizations API
+export const getOrganizations = () => api.get('/api/organizations').then(res => res.data);

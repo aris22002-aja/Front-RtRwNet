@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
-import { useRole, RoleDisplayName, Role } from '../contexts/RoleContext';
+import { useRole, ROLE_DISPLAY_NAMES, Role } from '../contexts/RoleContext';
 import { getStats } from '../api';
 import {
   Users,
@@ -35,7 +35,7 @@ interface StatsData {
 }
 
 const DashboardWarga = () => {
-  const { user } = useRole();
+  const { profile } = useRole();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [activeTab, setActiveTab] = useState('info');
 
@@ -60,7 +60,7 @@ const DashboardWarga = () => {
       });
   }, []);
 
-  if (!user) {
+  if (!profile) {
     return (
       <div className="dashboard-loading">
         <p>Memuat data...</p>
@@ -70,17 +70,17 @@ const DashboardWarga = () => {
 
   const renderRoleBadge = (role: Role) => {
     const badges: Record<Role, { color: string; icon: React.ReactNode }> = {
-      [Role.SUPER_ADMIN]: { color: 'var(--danger)', icon: null },
-      [Role.KETUA_RW]: { color: '#8b5cf6', icon: null },
-      [Role.KETUA_RT]: { color: '#6366f1', icon: null },
-      [Role.SEKRETARIS]: { color: '#06b6d4', icon: null },
-      [Role.BENDAHARA]: { color: '#f59e0b', icon: null },
-      [Role.WARGANEGARA]: { color: '#10b981', icon: null },
-      [Role.KARANG_TARUNA]: { color: '#ec4899', icon: null },
+      admin: { color: 'var(--danger)', icon: null },
+      kepala_lingkungan: { color: '#8b5cf6', icon: null },
+      ketua_rw: { color: '#6366f1', icon: null },
+      ketua_rt: { color: '#06b6d4', icon: null },
+      rt: { color: '#f59e0b', icon: null },
+      rw: { color: '#f59e0b', icon: null },
+      warga: { color: '#10b981', icon: null },
     };
     return (
       <span className="role-badge" style={{ backgroundColor: badges[role].color }}>
-        {RoleDisplayName[role]}
+        {ROLE_DISPLAY_NAMES[role]}
       </span>
     );
   };
@@ -95,13 +95,13 @@ const DashboardWarga = () => {
             Dashboard Warga
           </h1>
           <p className="header-subtitle">
-            Selamat datang, <strong>{user.name || user.email}</strong>
+            Selamat datang, <strong>{profile.displayName || profile.email}</strong>
           </p>
         </div>
         <div className="header-meta">
-          {renderRoleBadge(user.role)}
-          {user.rt && <span className="meta-tag">RT {user.rt}</span>}
-          {user.rw && <span className="meta-tag">RW {user.rw}</span>}
+          {renderRoleBadge(profile.role)}
+          {profile.rt && <span className="meta-tag">RT {profile.rt}</span>}
+          {profile.block && <span className="meta-tag">Block {profile.block}</span>}
         </div>
       </div>
 
@@ -188,18 +188,18 @@ const DashboardWarga = () => {
             {/* Profile Card */}
             <div className="profile-card">
               <div className="profile-avatar">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.name || 'User'} />
+                {profile.photoURL ? (
+                  <img src={profile.photoURL} alt={profile.displayName || 'User'} />
                 ) : (
                   <Users size={32} />
                 )}
               </div>
               <div className="profile-info">
-                <h3>{user.name || 'Warga'}</h3>
-                <p>{user.email}</p>
+                <h3>{profile.displayName || 'Warga'}</h3>
+                <p>{profile.email}</p>
                 <div className="profile-badges">
-                  {user.rt && <span className="badge">RT {user.rt}</span>}
-                  {user.rw && <span className="badge">RW {user.rw}</span>}
+                  {profile.rt && <span className="badge">RT {profile.rt}</span>}
+                  {profile.block && <span className="badge">Block {profile.block}</span>}
                 </div>
               </div>
             </div>
