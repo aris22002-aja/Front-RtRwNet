@@ -277,19 +277,25 @@ const DashboardPengurus = () => {
           <span className="crud-label">{label}</span>
           <div className="crud-actions">
             {canCreate && (
-              <button className="btn-action btn-add">
+              <button className="btn-action btn-add" onClick={() => openAddModal('houses')}>
                 <Plus size={16} />
                 Tambah
               </button>
             )}
             {canUpdate && (
-              <button className="btn-action btn-edit">
+              <button className="btn-action btn-edit" onClick={() => {
+                const firstHouse = houses[0];
+                if (firstHouse) openEditModal('houses', firstHouse);
+              }}>
                 <Edit size={16} />
                 Edit
               </button>
             )}
             {canDelete && (
-              <button className="btn-action btn-delete">
+              <button className="btn-action btn-delete" onClick={() => {
+                const firstHouse = houses[0];
+                if (firstHouse) openDeleteModal('houses', firstHouse);
+              }}>
                 <Trash2 size={16} />
                 Hapus
               </button>
@@ -615,8 +621,8 @@ const DashboardPengurus = () => {
                           <td><span className={`status-badge ${house.occupied ? 'occupied' : 'empty'}`}>{house.occupied ? 'Terisi' : 'Kosong'}</span></td>
                           {isAdmin && (
                             <td className="action-cell">
-                              <button className="btn-sm btn-edit" title="Edit"><Edit size={14} /></button>
-                              <button className="btn-sm btn-delete" title="Hapus"><Trash2 size={14} /></button>
+                              <button className="btn-sm btn-edit" title="Edit" onClick={() => openEditModal('houses', house)}><Edit size={14} /></button>
+                              <button className="btn-sm btn-delete" title="Hapus" onClick={() => openDeleteModal('houses', house)}><Trash2 size={14} /></button>
                             </td>
                           )}
                         </tr>
@@ -663,8 +669,8 @@ const DashboardPengurus = () => {
                           <td>{resident.phone || resident.telepon || '-'}</td>
                           {isAdmin && (
                             <td className="action-cell">
-                              <button className="btn-sm btn-edit" title="Edit"><Edit size={14} /></button>
-                              <button className="btn-sm btn-delete" title="Hapus"><Trash2 size={14} /></button>
+                              <button className="btn-sm btn-edit" title="Edit" onClick={() => openEditModal('residents', resident)}><Edit size={14} /></button>
+                              <button className="btn-sm btn-delete" title="Hapus" onClick={() => openDeleteModal('residents', resident)}><Trash2 size={14} /></button>
                             </td>
                           )}
                         </tr>
@@ -711,8 +717,8 @@ const DashboardPengurus = () => {
                           <td>{payment.paid_at || payment.payment_date || '-'}</td>
                           {isAdmin && (
                             <td className="action-cell">
-                              <button className="btn-sm btn-edit" title="Edit"><Edit size={14} /></button>
-                              <button className="btn-sm btn-delete" title="Hapus"><Trash2 size={14} /></button>
+                              <button className="btn-sm btn-edit" title="Edit" onClick={() => openEditModal('payments', payment)}><Edit size={14} /></button>
+                              <button className="btn-sm btn-delete" title="Hapus" onClick={() => openDeleteModal('payments', payment)}><Trash2 size={14} /></button>
                             </td>
                           )}
                         </tr>
@@ -762,8 +768,8 @@ const DashboardPengurus = () => {
                           <td className="action-cell">
                             {isAdmin && (
                               <>
-                                <button className="btn-sm btn-edit" title="Edit Role"><Shield size={14} /></button>
-                                <button className="btn-sm btn-delete" title="Hapus"><Trash2 size={14} /></button>
+                                <button className="btn-sm btn-edit" title="Edit Role" onClick={() => openEditModal('users', user)}><Shield size={14} /></button>
+                                <button className="btn-sm btn-delete" title="Hapus" onClick={() => openDeleteModal('users', user)}><Trash2 size={14} /></button>
                               </>
                             )}
                           </td>

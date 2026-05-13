@@ -1,0 +1,29 @@
+{
+  "name": "9router-cli",
+  "version": "1.0.0",
+  "description": "CLI wrapper for 9Router AI Gateway",
+  "main": "index.js",
+  "bin": {
+    "9router-cli": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js health"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "9router",
+    "mcp"
+  ],
+  "author": "Aris Priyanto",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "dotenv": "^17.4.2",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

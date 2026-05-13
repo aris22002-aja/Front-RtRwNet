@@ -7,7 +7,9 @@ import { getAnalytics, Analytics } from 'firebase/analytics';
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
@@ -61,21 +63,24 @@ googleProvider.setCustomParameters({
 /**
  * Sign in with Google Account (SSO)
  */
-export const signInWithGoogle = async (): Promise<User> => {
+export const signInWithGoogle = async (): Promise<void> => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
   } catch (error: unknown) {
-    if (import.meta.env.DEV) console.error('[Firebase] Google signIn error:', error);
-    if (error && typeof error === 'object' && 'code' in error) {
-      const firebaseError = error as { code: string; message?: string };
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
-        throw new Error('Login dibatalkan. Silakan coba lagi.');
-      }
-      if (firebaseError.code === 'auth/cancelled-popup-request') {
-        throw new Error('Hanya satu jendela login yang diizinkan.');
-      }
-    }
+    if (import.meta.env.DEV) console.error('[Firebase] Google redirect signIn error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resolve Google redirect result after Firebase sends user back to app.
+ */
+export const getGoogleRedirectUser = async (): Promise<User | null> => {
+  try {
+    const result = await getRedirectResult(auth);
+    return result?.user ?? null;
+  } catch (error: unknown) {
+    if (import.meta.env.DEV) console.error('[Firebase] Google redirect result error:', error);
     throw error;
   }
 };

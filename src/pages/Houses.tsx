@@ -6,7 +6,7 @@ const Houses = () => {
   const [houses, setHouses] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; label: string } | null>(null);
-  const [formData, setFormData] = useState({ block: '', number: '', owner_name: '', address: '', ipl_amount: 100000, status: 'vacant' });
+  const [formData, setFormData] = useState({ block: '', number: '', owner_name: '', address: '', ipl_amount: 100000, status: 'vacant', phone: '', email: '' });
 
   const fetchHouses = () => housesApi.getAll().then(setHouses);
 
@@ -19,7 +19,7 @@ const Houses = () => {
     housesApi.create(formData).then(() => {
       setShowForm(false);
       fetchHouses();
-      setFormData({ block: '', number: '', owner_name: '', address: '', ipl_amount: 100000, status: 'vacant' });
+      setFormData({ block: '', number: '', owner_name: '', address: '', ipl_amount: 100000, status: 'vacant', phone: '', email: '' });
     });
   };
 
@@ -68,86 +68,14 @@ const Houses = () => {
                 required 
               />
             </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
-            <div>
-              <label className="label">Nama Pemilik</label>
-              <input 
-                type="text" 
-                className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
-                value={formData.owner_name} 
-                onChange={e => setFormData({...formData, owner_name: e.target.value})} 
-                required 
-              />
-            </div>
+
+
+
+
+
+
+
+
             <div style={{ gridColumn: 'span 2' }}>
               <label className="label">Alamat Lengkap</label>
               <input 
@@ -214,6 +142,20 @@ const Houses = () => {
 </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Konfirmasi Hapus</h3>
+            <p>Yakin hapus rumah <strong>{deleteTarget.label}</strong>?</p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setDeleteTarget(null)}>Batal</button>
+              <button className="btn btn-danger" onClick={handleDeleteConfirm}>Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

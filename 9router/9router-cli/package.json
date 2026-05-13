@@ -1,0 +1,32 @@
+{
+  "name": "9router-cli",
+  "version": "1.2.0",
+  "description": "Multi-provider AI CLI for Together.ai, OpenRouter, DeepSeek",
+  "main": "index.js",
+  "bin": {
+    "9router-cli": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js health",
+    "dev": "DEBUG_9ROUTER=true node index.js chat --list"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "together",
+    "openrouter",
+    "deepseek"
+  ],
+  "author": "Aris Priyanto",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "https-proxy-agent": "^7.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

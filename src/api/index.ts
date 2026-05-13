@@ -209,9 +209,11 @@ const updateUserRole = async (userId: string, role: string): Promise<void> => {
 // Helper to get data snapshot for resume
 const getDataSnapshot = async (): Promise<Record<string, unknown>> => {
   try {
-    return await api.get('/api/snapshot').then(res => res.data);
-  } catch {
-    logDev('[API] Using mock snapshot data');
+    const response = await api.get('/api/stats');
+    logDev('[API] Fetched live snapshot data from backend');
+    return response.data;
+  } catch (err) {
+    logDev('[API] Backend unreachable, using mock snapshot data');
     return {
       houses: mockStore.houses.length || 25,
       residents: mockStore.residents.length || 80,
@@ -263,6 +265,7 @@ const buildStats = (data: Record<string, unknown>) => ({
 // Houses API
 export const housesApi = {
   getAll: () => api.get('/api/houses').then(res => res.data),
+  getById: (id: number) => api.get(`/api/houses/${id}`).then(res => res.data),
   create: (data: Omit<House, 'id'>) => {
     if (import.meta.env.DEV) {
       const newHouse = { ...data, id: generateId() };
@@ -310,6 +313,7 @@ export const residentsApi = {
       } as Resident & { block: string; number: string };
     });
   },
+  getById: (id: number) => api.get(`/api/residents/${id}`).then(res => res.data),
   create: (data: Omit<Resident, 'id'>) => {
     if (import.meta.env.DEV) {
       const newResident = { ...data, id: generateId() };
@@ -356,6 +360,7 @@ export const paymentsApi = {
         } as Payment & { block: string; number: string };
       });
   },
+  getById: (id: number) => api.get(`/api/payments/${id}`).then(res => res.data),
   generate: (month: number, year: number) => api.post('/api/payments/generate', { month, year }).then(res => res.data),
   pay: (id: number, data: Partial<Payment>) => api.put(`/api/payments/${id}/pay`, data).then(res => res.data),
   create: (data: Omit<Payment, 'id'>) => {
@@ -389,6 +394,7 @@ export const paymentsApi = {
 export const getProducts = () => api.get('/api/products').then(res => res.data);
 export const productsApi = {
   getAll: () => api.get('/api/products').then(res => res.data),
+  getById: (id: number) => api.get(`/api/products/${id}`).then(res => res.data),
   create: (data: Omit<Product, 'id'>) => {
     if (import.meta.env.DEV) {
       const newProduct = { ...data, id: generateId() };
@@ -414,6 +420,7 @@ export const productsApi = {
 export const getPosts = () => api.get('/api/posts').then(res => res.data);
 export const postsApi = {
   getAll: () => api.get('/api/posts').then(res => res.data),
+  getById: (id: number) => api.get(`/api/posts/${id}`).then(res => res.data),
   create: (data: Omit<Post, 'id'>) => {
     if (import.meta.env.DEV) {
       const newPost = { ...data, id: generateId() };
@@ -530,5 +537,10 @@ export const komunitasApi = {
   delete: (id: number) => api.delete(`/api/komunitas/${id}`).then(res => res.data),
 };
 
-// Organizations API
-export const getOrganizations = () => api.get('/api/organizations').then(res => res.data);
+export const organizationsApi = {
+  getAll: () => api.get('/api/organizations').then(res => res.data),
+  getById: (id: number) => api.get(`/api/organizations/${id}`).then(res => res.data),
+  create: (data: unknown) => api.post('/api/organizations', data).then(res => res.data),
+  update: (id: number, data: unknown) => api.put(`/api/organizations/${id}`, data).then(res => res.data),
+  delete: (id: number) => api.delete(`/api/organizations/${id}`).then(res => res.data),
+};

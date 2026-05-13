@@ -82,6 +82,7 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
           role: defaultRole,
         };
         setProfile(newProfile);
+        setLoading(false);
       }
     } catch (error) {
       console.error('[RoleContext] Load profile error:', error);
@@ -94,6 +95,7 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
         photoURL: firebaseUser.photoURL,
         role: isMasterAdmin ? 'admin' : 'warga',
       });
+      setLoading(false);
     }
   };
 
