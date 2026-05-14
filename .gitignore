@@ -33,3 +33,5 @@ Thumbs.db
 # Cache
 .eslintcache
 .cache
+
+.DS_Store
