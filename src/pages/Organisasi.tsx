@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getOrganizations } from '../api';
+import { organizationsApi } from '../api';
 import { Building2, Search, Users, Phone, Mail, Badge } from 'lucide-react';
 
 // ✅ Definisikan tipe data
@@ -22,8 +22,8 @@ const Organisasi = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getOrganizations()
-      .then((data: Organization[]) => setOrganizations(data)) // ✅ parameter bertipe
+    organizationsApi.getAll()
+      .then((data: Organization[]) => setOrganizations(data))
       .catch(() => setOrganizations([]))
       .finally(() => setLoading(false));
   }, []);
