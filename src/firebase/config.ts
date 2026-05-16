@@ -4,21 +4,20 @@
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAnalytics, Analytics } from 'firebase/analytics';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  User, 
-  Auth, 
-  sendPasswordResetEmail as firebaseSendPasswordResetEmail 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithRedirect,
+  getRedirectResult,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User,
+  Auth,
+  sendPasswordResetEmail as firebaseSendPasswordResetEmail
 } from 'firebase/auth';
 import { getDatabase, ref, set, get, Database } from 'firebase/database';
-import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
-import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
 
 // --- Environment Variables ---
 const firebaseConfig = {
