@@ -243,17 +243,17 @@ const buildResume = (data: Record<string, unknown>) => ({
 
 // Build Stats - matches Dashboard.tsx StatsData interface
 const buildStats = (data: Record<string, unknown>) => ({
-  totalHouses: (data.houses as number) || 0,
-  occupiedHouses: Math.floor(((data.houses as number) || 0) * 0.85),
-  totalResidents: (data.residents as number) || 0,
-  monthlyRevenue: ((data.payments as number) || 0) * 250000,
+  totalHouses: (data.total_houses as number) || 0,
+  occupiedHouses: (data.occupied_houses as number) || 0,
+  totalResidents: (data.total_residents as number) || 0,
+  monthlyRevenue: ((data.paid_payments as number) || 0) * 250000, // estimate
   totalUsers: MOCK_USERS.length,
   totalActivities: 0,
   totalPosts: 0,
   upcomingAgendas: 0,
   totalCommunities: 0,
   totalOrganizations: 0,
-  totalEvents: (data.events as number) || 0,
+  totalEvents: (data.total_payments as number) || 0,
   totalProducts: 0,
   recentUpdates: ['Data diambil dari API Backend', 'Update terakhir: Sekarang'],
 });

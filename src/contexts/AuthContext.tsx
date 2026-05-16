@@ -1,6 +1,7 @@
 // ============================================================
 // AuthContext — Global Authentication State Provider
 // Multi-level auth: Google SSO, Email/Password, Forgot Password
+// RBAC: Admin (role = 'admin') vs Warga (default)
 // ============================================================
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -13,12 +14,15 @@ import {
   observeAuthState,
   saveUserProfile,
   sendPasswordReset,
-  getGoogleRedirectResult
+  getGoogleRedirectResult,
+  getUserProfile,
 } from '../firebase/config';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;  // true if role === 'admin' in Firebase RTDB
+  loadingProfile: boolean;
   error: string | null;
   clearError: () => void;
   loginWithGoogle: () => Promise<void>;
@@ -38,6 +42,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  // --- Load role from Firebase RTDB whenever user changes ---
+  useEffect(() => {
+    if (user) {
+      setLoadingProfile(true);
+      getUserProfile(user.uid)
+        .then((profile) => {
+          setIsAdmin(profile?.role === 'admin');
+        })
+        .catch(() => setIsAdmin(false))
+        .finally(() => setLoadingProfile(false));
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = observeAuthState((firebaseUser) => {
@@ -124,6 +145,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       value={{
         user,
         loading,
+        isAdmin,
+        loadingProfile,
         error,
         clearError,
         loginWithGoogle,

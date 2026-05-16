@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { kegiatanApi } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import { Bike, MapPin, Calendar, Clock, Users, Plus, Trash2 } from 'lucide-react';
 
 const Kegiatan = () => {
+  const { isAdmin } = useAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [filter, setFilter] = useState<'semua' | 'akan datang' | 'selesai'>('semua');
   const [loading, setLoading] = useState(true);
 
-  // State untuk form tambah
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
 
-  // Development-only error logger
   const errorDev = (...args: unknown[]) => {
     if (import.meta.env.DEV) console.error(...args);
   };
@@ -94,14 +94,15 @@ const Kegiatan = () => {
             Daftar kegiatan & acara warga Grand Harmony 5
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-          Tambah Kegiatan
-        </button>
+        {isAdmin && (
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Tambah Kegiatan
+          </button>
+        )}
       </div>
 
-      {/* Form tambah */}
-      {showForm && (
+      {showForm && isAdmin && (
         <div className="card" style={{ marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Tambah Kegiatan Baru</h3>
           <form onSubmit={handleTambah} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -188,25 +189,26 @@ const Kegiatan = () => {
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
           {filteredEvents.map((event) => (
             <div key={event.id} className="card" style={{ cursor: 'pointer', position: 'relative' }}>
-              {/* Tombol hapus */}
-              <button
-                onClick={() => setDeleteTarget({ id: event.id, title: event.title })}
-                style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  background: 'rgba(255,255,255,0.8)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  padding: '4px',
-                  cursor: 'pointer',
-                  color: 'var(--danger)',
-                  zIndex: 10,
-                }}
-                title="Hapus kegiatan"
-              >
-                <Trash2 size={16} />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setDeleteTarget({ id: event.id, title: event.title })}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(255,255,255,0.8)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    color: 'var(--danger)',
+                    zIndex: 10,
+                  }}
+                  title="Hapus kegiatan"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
 
               {event.image ? (
                 <img
@@ -289,6 +291,20 @@ const Kegiatan = () => {
                 ? 'Tidak ada kegiatan yang akan datang.'
                 : 'Belum ada kegiatan yang selesai.'}
           </p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Konfirmasi Hapus</h3>
+            <p>Yakin hapus kegiatan <strong>{deleteTarget.title}</strong>?</p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setDeleteTarget(null)}>Batal</button>
+              <button className="btn btn-danger" onClick={handleHapusConfirm}>Hapus</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

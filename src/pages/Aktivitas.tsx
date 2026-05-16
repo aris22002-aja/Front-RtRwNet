@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { activitiesApi } from '../api';
-import { Activity, Clock, User, Plus, Trash2, Pencil, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Activity, Clock, User, Plus, Trash2, Pencil } from 'lucide-react';
 
 type ActivityType = 'postingan' | 'pembayaran' | 'kegiatan' | 'komunitas' | 'sistem' | string;
 
@@ -18,6 +19,7 @@ const errorDev = (...args: unknown[]) => {
 };
 
 const Aktivitas = () => {
+  const { isAdmin } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<ActivityType | 'semua'>('semua');
@@ -162,15 +164,17 @@ const Aktivitas = () => {
           <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Log aktivitas terbaru di lingkungan Grand Harmony 5</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button className="btn btn-primary" onClick={openCreateForm}>
-            <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-            Tambah Aktivitas
-          </button>
-        </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button className="btn btn-primary" onClick={openCreateForm}>
+              <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+              Tambah Aktivitas
+            </button>
+          </div>
+        )}
       </div>
 
-      {showForm && (
+      {showForm && isAdmin && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>{editingId === null ? 'Tambah Aktivitas' : 'Edit Aktivitas'}</h3>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -183,9 +187,7 @@ const Aktivitas = () => {
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
               >
                 {ACTIVITY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </div>
@@ -227,9 +229,7 @@ const Aktivitas = () => {
               <button type="submit" className="btn btn-primary" disabled={saving}>
                 {saving ? 'Menyimpan...' : 'Simpan'}
               </button>
-              <button type="button" className="btn" onClick={closeForm} disabled={saving}>
-                Batal
-              </button>
+              <button type="button" className="btn" onClick={closeForm} disabled={saving}>Batal</button>
             </div>
           </form>
         </div>
@@ -312,51 +312,51 @@ const Aktivitas = () => {
                       <Clock size={12} /> {activity.time}
                     </span>
 
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => openEditForm(activity)}
-                        style={{
-                          background: 'rgba(255,255,255,0.85)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '8px',
-                          padding: '4px 8px',
-                          cursor: activity.id === undefined ? 'not-allowed' : 'pointer',
-                          opacity: activity.id === undefined ? 0.5 : 1,
-                          color: 'var(--text)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                        }}
-                        title={activity.id === undefined ? 'Tidak bisa edit (id tidak tersedia)' : 'Edit aktivitas'}
-                        disabled={activity.id === undefined}
-                      >
-                        <Pencil size={14} />
-                        Edit
-                      </button>
+                    {isAdmin && (
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => openEditForm(activity)}
+                          style={{
+                            background: 'rgba(255,255,255,0.85)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '8px',
+                            padding: '4px 8px',
+                            cursor: activity.id === undefined ? 'not-allowed' : 'pointer',
+                            opacity: activity.id === undefined ? 0.5 : 1,
+                            color: 'var(--text)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
+                          title={activity.id === undefined ? 'Tidak bisa edit (id tidak tersedia)' : 'Edit aktivitas'}
+                          disabled={activity.id === undefined}
+                        >
+                          <Pencil size={14} /> Edit
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(activity)}
-                        style={{
-                          background: 'rgba(255,255,255,0.85)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '8px',
-                          padding: '4px 8px',
-                          cursor: activity.id === undefined ? 'not-allowed' : 'pointer',
-                          opacity: activity.id === undefined ? 0.5 : 1,
-                          color: 'var(--danger)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                        }}
-                        title={activity.id === undefined ? 'Tidak bisa hapus (id tidak tersedia)' : 'Hapus aktivitas'}
-                        disabled={activity.id === undefined}
-                      >
-                        <Trash2 size={14} />
-                        Hapus
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(activity)}
+                          style={{
+                            background: 'rgba(255,255,255,0.85)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '8px',
+                            padding: '4px 8px',
+                            cursor: activity.id === undefined ? 'not-allowed' : 'pointer',
+                            opacity: activity.id === undefined ? 0.5 : 1,
+                            color: 'var(--danger)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
+                          title={activity.id === undefined ? 'Tidak bisa hapus (id tidak tersedia)' : 'Hapus aktivitas'}
+                          disabled={activity.id === undefined}
+                        >
+                          <Trash2 size={14} /> Hapus
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -375,6 +375,20 @@ const Aktivitas = () => {
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <Activity size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
           <p style={{ color: 'var(--text-muted)' }}>Belum ada aktivitas tercatat.</p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Konfirmasi Hapus</h3>
+            <p>Yakin hapus aktivitas <strong>{deleteTarget.message.slice(0, 40)}...</strong>?</p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setDeleteTarget(null)}>Batal</button>
+              <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

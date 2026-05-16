@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { komunitasApi } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   HeartHandshake,
   Search,
@@ -11,13 +12,13 @@ import {
 } from 'lucide-react';
 
 const Komunitas = () => {
+  const { isAdmin } = useAuth();
   const [communities, setCommunities] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
 
-  // Development-only error logger
   const errorDev = (...args: unknown[]) => {
     if (import.meta.env.DEV) console.error(...args);
   };
@@ -103,14 +104,15 @@ const Komunitas = () => {
             Temukan dan bergabunglah dengan komunitas di Grand Harmony 5
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-          <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-          Tambah Komunitas
-        </button>
+        {isAdmin && (
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            <Plus size={18} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+            Tambah Komunitas
+          </button>
+        )}
       </div>
 
-      {/* Form Tambah Komunitas */}
-      {showForm && (
+      {showForm && isAdmin && (
         <div className="card" style={{ marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Tambah Komunitas Baru</h3>
           <form onSubmit={handleTambah} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -209,27 +211,27 @@ const Komunitas = () => {
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
           {filteredCommunities.map((komunitas) => (
             <div key={komunitas.id} className="card" style={{ position: 'relative' }}>
-              {/* Tombol Hapus */}
-              <button
-                onClick={() => setDeleteTarget({ id: komunitas.id, name: komunitas.name })}
-                style={{
-                  position: 'absolute',
-                  top: '10px',
-                  right: '10px',
-                  background: 'rgba(255,255,255,0.8)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  padding: '4px',
-                  cursor: 'pointer',
-                  color: 'var(--danger)',
-                  zIndex: 10,
-                }}
-                title="Hapus komunitas"
-              >
-                <Trash2 size={16} />
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setDeleteTarget({ id: komunitas.id, name: komunitas.name })}
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    background: 'rgba(255,255,255,0.8)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    color: 'var(--danger)',
+                    zIndex: 10,
+                  }}
+                  title="Hapus komunitas"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
 
-              {/* Banner */}
               <div
                 style={{
                   width: '100%',
@@ -308,6 +310,20 @@ const Komunitas = () => {
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
           <HeartHandshake size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
           <p style={{ color: 'var(--text-muted)' }}>Belum ada komunitas yang terdaftar.</p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Konfirmasi Hapus</h3>
+            <p>Yakin hapus komunitas <strong>{deleteTarget.name}</strong>?</p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <button className="btn" onClick={() => setDeleteTarget(null)}>Batal</button>
+              <button className="btn btn-danger" onClick={handleHapusConfirm}>Hapus</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
