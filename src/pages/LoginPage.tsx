@@ -29,24 +29,38 @@ const LoginPage: React.FC = () => {
   const [showForgot, setShowForgot] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  const { loginWithGoogle, loginWithEmail, registerWithEmail, forgotPassword, error, clearError } = useAuth();
+  const { user, loginWithGoogle, loginWithEmail, registerWithEmail, forgotPassword, error, clearError } = useAuth();
   const { isAdmin, isRW, isRT } = useRole();
   const navigate = useNavigate();
 
-  // Handle Google Login (uses redirect auth to avoid COOP popup issues)
+  // Handle Google Login (uses popup auth to prevent bounce tracking issues)
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
       clearError();
       await loginWithGoogle();
-      // With redirect auth, the page will reload after returning from Google.
       // AuthContext's onAuthStateChanged will handle the user state.
-      // Don't navigate here - the redirect handles the flow.
+      // Don't navigate here - the popup handles the flow.
     } catch (err) {
       console.error('[Login] Google error:', err);
       setLoading(false);
     }
   };
+
+  // Navigate based on role
+  const navigateAfterLogin = () => {
+    // Always redirect to /dashboard
+    // App.tsx route already handles role-based routing:
+    // Admin/RW/RT → DashboardPengurus, Warga → redirect to dashboard-warga
+    navigate('/dashboard');
+  };
+
+  // Trigger navigation after successful Google popup login
+  React.useEffect(() => {
+    if (user) {
+      navigateAfterLogin();
+    }
+  }, [user, navigateAfterLogin]);
 
   // Handle Email Login
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -86,14 +100,6 @@ const LoginPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Navigate based on role
-  const navigateAfterLogin = () => {
-    // Always redirect to /dashboard
-    // App.tsx route already handles role-based routing:
-    // Admin/RW/RT → DashboardPengurus, Warga → redirect to dashboard-warga
-    navigate('/dashboard');
   };
 
   return (
@@ -152,24 +158,28 @@ const LoginPage: React.FC = () => {
             {!showForgot ? (
               <form onSubmit={handleEmailSubmit} className={styles.form}>
                 <div className={styles.inputGroup}>
-                  <label>Email</label>
+                  <label htmlFor="email-input">Email</label>
                   <input
+                    id="email-input"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@email.com"
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div className={styles.inputGroup}>
-                  <label>Password</label>
+                  <label htmlFor="password-input">Password</label>
                   <input
+                    id="password-input"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 6 karakter"
                     required
                     minLength={6}
+                    autoComplete={isRegister ? "new-password" : "current-password"}
                   />
                 </div>
                 <button type="submit" className={styles.submitBtn} disabled={loading}>
@@ -197,13 +207,16 @@ const LoginPage: React.FC = () => {
                   <>
                     <p className={styles.hint}>Masukkan email untuk reset password</p>
                     <div className={styles.inputGroup}>
-                      <label>Email</label>
+                      <label htmlFor="reset-email-input">Email</label>
                       <input
+                        id="reset-email-input"
+                        name="reset-email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="nama@email.com"
                         required
+                        autoComplete="email"
                       />
                     </div>
                     <button type="submit" className={styles.submitBtn} disabled={loading}>

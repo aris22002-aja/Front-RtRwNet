@@ -5,15 +5,15 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { 
-  signInWithGoogle, 
-  getGoogleRedirectUser,
-  signInWithEmail, 
-  registerWithEmail, 
-  logout, 
-  observeAuthState, 
-  saveUserProfile, 
-  sendPasswordReset 
+import {
+  signInWithGoogle,
+  signInWithEmail,
+  registerWithEmail,
+  logout,
+  observeAuthState,
+  saveUserProfile,
+  sendPasswordReset,
+  getGoogleRedirectResult
 } from '../firebase/config';
 
 interface AuthContextType {
@@ -40,11 +40,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Handle redirect result when user returns from Google OAuth redirect
-    getGoogleRedirectUser().catch((err) => {
-      if (import.meta.env.DEV) console.error('[AuthContext] getRedirectResult error:', err);
-    });
-
     const unsubscribe = observeAuthState((firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);

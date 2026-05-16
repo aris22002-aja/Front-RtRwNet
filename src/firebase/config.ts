@@ -8,8 +8,6 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signOut, 
@@ -19,6 +17,8 @@ import {
   sendPasswordResetEmail as firebaseSendPasswordResetEmail 
 } from 'firebase/auth';
 import { getDatabase, ref, set, get, Database } from 'firebase/database';
+import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
+import { getRedirectResult, signInWithRedirect } from 'firebase/auth';
 
 // --- Environment Variables ---
 const firebaseConfig = {
@@ -61,7 +61,8 @@ googleProvider.setCustomParameters({
 // --- Auth Functions ---
 
 /**
- * Sign in with Google Account (SSO)
+ * Sign in with Google Account (SSO) using redirect method
+ * Recommended: avoids COOP issues with popup method
  */
 export const signInWithGoogle = async (): Promise<void> => {
   try {
@@ -73,15 +74,14 @@ export const signInWithGoogle = async (): Promise<void> => {
 };
 
 /**
- * Resolve Google redirect result after Firebase sends user back to app.
+ * Get redirect result on page load (call after redirect back)
  */
-export const getGoogleRedirectUser = async (): Promise<User | null> => {
+export const getGoogleRedirectResult = async () => {
   try {
-    const result = await getRedirectResult(auth);
-    return result?.user ?? null;
+    return await getRedirectResult(auth);
   } catch (error: unknown) {
-    if (import.meta.env.DEV) console.error('[Firebase] Google redirect result error:', error);
-    throw error;
+    if (import.meta.env.DEV) console.error('[Firebase] Redirect result error:', error);
+    return null;
   }
 };
 
