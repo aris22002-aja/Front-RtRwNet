@@ -5,7 +5,8 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, auth } from '../firebase/config';
+import { syncCurrentUser, usersApi } from '../api';
+import { auth } from '../firebase/config';
 
 export type Role = 'admin' | 'kepala_lingkungan' | 'ketua_rw' | 'ketua_rt' | 'rt' | 'rw' | 'warga';
 
@@ -49,44 +50,31 @@ export const RoleProvider: React.FC<RoleProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user profile from Firebase RTDB
+  // Load user profile from backend user store
   const loadProfile = async (firebaseUser: User) => {
     try {
-      const data = await getUserProfile(firebaseUser.uid);
-      if (data) {
-        // Check if admin by email
-        const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
-        const role = (isMasterAdmin ? 'admin' : (data.role as Role)) || 'warga';
-        
-        const userProfile: UserProfile = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          role,
-          block: data.block as string,
-          rt: data.rt as string,
-          createdAt: data.createdAt as string,
-        };
-        setProfile(userProfile);
-      } else {
-        // New user - set default role
-        const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
-        const defaultRole: Role = isMasterAdmin ? 'admin' : 'warga';
-        
-        const newProfile: UserProfile = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          role: defaultRole,
-        };
-        setProfile(newProfile);
-        setLoading(false);
+      let data = await usersApi.getById(firebaseUser.uid);
+      if (!data) {
+        await syncCurrentUser();
+        data = await usersApi.getById(firebaseUser.uid);
       }
+
+      const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
+      const role = (isMasterAdmin ? 'admin' : (data?.role as Role)) || 'warga';
+
+      const userProfile: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        role,
+        block: data?.block as string,
+        rt: data?.rt as string,
+        createdAt: data?.createdAt as string,
+      };
+      setProfile(userProfile);
     } catch (error) {
       console.error('[RoleContext] Load profile error:', error);
-      // Fallback: set admin for master email
       const isMasterAdmin = firebaseUser.email === ADMIN_EMAIL;
       setProfile({
         uid: firebaseUser.uid,

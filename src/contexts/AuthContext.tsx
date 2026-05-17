@@ -12,11 +12,10 @@ import {
   registerWithEmail,
   logout,
   observeAuthState,
-  saveUserProfile,
   sendPasswordReset,
   getGoogleRedirectResult,
-  getUserProfile,
 } from '../firebase/config';
+import { syncCurrentUser, usersApi } from '../api';
 
 interface AuthContextType {
   user: User | null;
@@ -45,13 +44,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // --- Load role from Firebase RTDB whenever user changes ---
   useEffect(() => {
     if (user) {
       setLoadingProfile(true);
-      getUserProfile(user.uid)
+      usersApi.getById(user.uid)
         .then((profile) => {
-          setIsAdmin(profile?.role === 'admin');
+          setIsAdmin(profile?.role === 'admin' || profile?.role === 'kepala_lingkungan');
         })
         .catch(() => setIsAdmin(false))
         .finally(() => setLoadingProfile(false));
@@ -66,14 +64,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
 
       if (firebaseUser) {
-        saveUserProfile(firebaseUser.uid, {
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-          provider: firebaseUser.providerData[0]?.providerId,
-          lastLogin: new Date().toISOString(),
-        }).catch((err) => {
-          if (import.meta.env.DEV) console.error('[AuthContext] Save profile error:', err);
+        syncCurrentUser().catch((err) => {
+          if (import.meta.env.DEV) console.error('[AuthContext] Sync user profile error:', err);
         });
       }
     });

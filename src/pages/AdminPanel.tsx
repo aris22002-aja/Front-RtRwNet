@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRole, ROLE_DISPLAY_NAMES, PERMISSIONS, Role } from '../contexts/RoleContext';
-import { saveUserProfile, getUserProfile } from '../firebase/config';
+import { usersApi } from '../api';
 import { Shield, Users, Save, Search, AlertCircle } from 'lucide-react';
 
 export const AdminPanel: React.FC = () => {
@@ -33,64 +33,36 @@ export const AdminPanel: React.FC = () => {
     'warga'
   ];
 
-  // Load users with managerial roles from Firebase RTDB
+  // Load users from backend D1 user store
   useEffect(() => {
-    const loadUsersFromRTDB = async () => {
+    const loadUsers = async () => {
       try {
-        const { getDatabase, ref, get } = await import('firebase/database');
-        const db = getDatabase();
-        const usersRef = ref(db, 'users');
-        
-        const snapshot = await get(usersRef);
-        
-        const usersData: Array<{
-          uid: string;
-          email: string;
-          role: Role;
-          roleDisplay: string;
-          name: string;
-        }> = [];
-        
-        snapshot.forEach((child: any) => {
-          const data = child.val() || {};
-          const role = (data.role as Role) || 'warga';
-          const roleDisplay = ROLE_DISPLAY_NAMES[role] || 'Warga';
-          
-          // Show users with managerial roles
-          if (['ketua_rw', 'ketua_rt', 'rt', 'rw'].includes(role)) {
-            usersData.push({
-              uid: child.key as string,
-              email: data.email || '',
-              name: data.displayName || data.email || 'Unknown',
-              role: role,
-              roleDisplay: roleDisplay,
-            });
-          }
-        });
-        
+        const users = await usersApi.getAll();
+        const usersData = users
+          .filter((user) => ['ketua_rw', 'ketua_rt', 'rt', 'rw', 'admin', 'kepala_lingkungan'].includes(user.role))
+          .map((user) => ({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || user.email || 'Unknown',
+            role: user.role as Role,
+            roleDisplay: ROLE_DISPLAY_NAMES[user.role as Role] || 'Warga',
+          }));
         setUsers(usersData);
       } catch (err) {
         console.error('[AdminPanel] Load users error:', err);
         setUsers([]);
       }
     };
-    
-    loadUsersFromRTDB();
+
+    loadUsers();
   }, []);
 
-  // Save role update to Firebase RTDB
   const handleUpdateRole = async () => {
     if (!selectedUserUid || !selectedRole) return;
-    
+
     setSaveStatus('saving');
     try {
-      await saveUserProfile(selectedUserUid, {
-        role: selectedRole,
-        roleDisplay: ROLE_DISPLAY_NAMES[selectedRole],
-        updatedAt: new Date().toISOString(),
-        updatedBy: profile?.uid,
-      });
-      
+      await usersApi.updateRole(selectedUserUid, selectedRole);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {

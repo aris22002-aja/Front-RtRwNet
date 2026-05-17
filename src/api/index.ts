@@ -193,16 +193,24 @@ const MOCK_USERS = [
   { uid: 'user-002', email: 'warga@example.com', displayName: 'Warga', role: 'warga' },
 ];
 
-// Helper to update user role in Firebase RTDB
+// Helper to update user role through backend API
 const updateUserRole = async (userId: string, role: string): Promise<void> => {
   try {
-    const { getDatabase, ref, set } = await import('firebase/database');
-    const rtdb = getDatabase(firebaseApp);
-    await set(ref(rtdb, `users/${userId}/role`), role);
+    await api.put(`/api/users/${encodeURIComponent(userId)}/role`, { role });
     logDev(`[RoleContext] Updated role for ${userId} to ${role}`);
   } catch (err) {
     errorDev('[RoleContext] Failed to update role:', err);
     throw err;
+  }
+};
+
+export const syncCurrentUser = async (): Promise<Record<string, unknown> | null> => {
+  try {
+    const response = await api.post('/api/users/sync');
+    return response.data;
+  } catch (err) {
+    errorDev('[API] Failed to sync current user:', err);
+    return null;
   }
 };
 

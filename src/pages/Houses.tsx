@@ -75,8 +75,9 @@ const Houses = () => {
           <h3>{editingHouse ? 'Edit Rumah' : 'Tambah Rumah Baru'}</h3>
           <form onSubmit={handleSubmit} style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label className="label">Blok</label>
+              <label className="label" htmlFor="house-block">Blok</label>
               <input 
+                id="house-block"
                 type="text" 
                 className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
                 value={formData.block} 
@@ -85,8 +86,9 @@ const Houses = () => {
               />
             </div>
             <div>
-              <label className="label">Nomor</label>
+              <label className="label" htmlFor="house-number">Nomor</label>
               <input 
+                id="house-number"
                 type="text" 
                 className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
                 value={formData.number} 
@@ -95,8 +97,9 @@ const Houses = () => {
               />
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <label className="label">Alamat Lengkap</label>
+              <label className="label" htmlFor="house-address">Alamat Lengkap</label>
               <input 
+                id="house-address"
                 type="text" 
                 className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
                 value={formData.address} 
@@ -104,8 +107,9 @@ const Houses = () => {
               />
             </div>
             <div>
-              <label className="label">Iuran IPL (Rp)</label>
+              <label className="label" htmlFor="house-ipl">Iuran IPL (Rp)</label>
               <input 
+                id="house-ipl"
                 type="number" 
                 className="btn" style={{ width: '100%', border: '1px solid var(--border)', textAlign: 'left' }}
                 value={formData.ipl_amount} 
